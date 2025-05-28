@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{{ subject.subject_title }}</h2>
+            <p class="text-muted">{{ subject.subject_code }}</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+            <i class="fas fa-plus"></i> Add Activity
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Activities/Tasks Section -->
+            <div class="card">
+                <div class="card-body">
+                    {% for activity in activities %}
+                    <div class="activity-item mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5>{{ activity.activity_name }}</h5>
+                                <p class="text-muted mb-0">{{ activity.get_activity_type_display }}</p>
+                            </div>
+                            <div>
+                                <span class="badge bg-primary">{{ activity.total_items }} points</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-muted my-4">No activities yet</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Subject Info Sidebar -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Class Details</h5>
+                    <div class="subject-details mt-3">
+                        <p><i class="fas fa-graduation-cap me-2"></i>{{ subject.course.course_name }}</p>
+                        <p><i class="fas fa-calendar me-2"></i>{{ subject.get_semester_display }}</p>
+                        <p><i class="fas fa-calendar-alt me-2"></i>{{ subject.school_year }}</p>
+                        <p><i class="fas fa-users me-2"></i>Year {{ subject.year_level }} - Section {{ subject.section }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Activity Modal -->
+<div class="modal fade" id="addActivityModal" tabindex="-1">
+    <!-- Add modal content for creating activities -->
+</div>
+{% endblock %}

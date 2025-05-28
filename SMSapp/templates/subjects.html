@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 px-3">
+        <h2>Subjects</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+            <i class="fas fa-plus"></i> Add Subject
+        </button>
+    </div>
+
+    <div class="subjects-grid">
+        {% if sample_subjects %}
+            {% for subject in sample_subjects %}
+            <div class="subject-card" onclick="window.location.href='#'">
+                <div class="subject-header" style="background-color: {{ subject.theme_color }}">
+                    <div>
+                        <h3>{{ subject.subject_code }}</h3>
+                        <p>{{ subject.subject_title }}</p>
+                    </div>
+                    <div class="subject-actions dropdown">
+                        <button class="btn btn-link text-white" onclick="event.stopPropagation()" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <button class="dropdown-item" onclick="event.stopPropagation()">
+                                    <i class="fas fa-edit me-2"></i> Edit
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item text-danger" onclick="event.stopPropagation()">
+                                    <i class="fas fa-archive me-2"></i> Archive
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="subject-content">
+                    <div class="subject-details">
+                        <p><i class="fas fa-graduation-cap me-2"></i>{{ subject.course_name }}</p>
+                        <p><i class="fas fa-calendar me-2"></i>{{ subject.semester }} | {{ subject.school_year }}</p>
+                        <p><i class="fas fa-users me-2"></i>Year {{ subject.year_level }} - Section {{ subject.section }}</p>
+                        <!-- Sample Progress -->
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small>Course Progress</small>
+                                <small>60%</small>
+                            </div>
+                            <div class="progress" style="height: 5px;">
+                                <div class="progress-bar" role="progressbar" style="width: 60%; background-color: {{ subject.theme_color }}" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            {% for subject in subjects %}
+            <div class="subject-card" onclick="window.location.href='{% url 'subject_detail' subject.subject_code %}'">
+                <div class="subject-header">
+                    <div>
+                        <h3>{{ subject.subject_code }}</h3>
+                        <p>{{ subject.subject_title }}</p>
+                    </div>
+                    <div class="subject-actions dropdown">
+                        <button class="btn btn-link text-white" onclick="event.stopPropagation()" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <button class="dropdown-item edit-subject" 
+                                        data-id="{{ subject.subject_code }}"
+                                        onclick="event.stopPropagation()">
+                                    <i class="fas fa-edit me-2"></i> Edit
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item text-danger delete-subject" 
+                                        data-id="{{ subject.subject_code }}"
+                                        onclick="event.stopPropagation()">
+                                    <i class="fas fa-trash me-2"></i> Delete
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="subject-content">
+                    <div class="subject-details">
+                        <p><i class="fas fa-graduation-cap me-2"></i>{{ subject.course.course_abv }}</p>
+                        <p><i class="fas fa-calendar me-2"></i>{{ subject.get_semester_display }} | {{ subject.school_year }}</p>
+                        <p><i class="fas fa-users me-2"></i>Year {{ subject.year_level }} - Section {{ subject.section }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add/Edit Subject Modal -->
+<div class="modal fade" id="addSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Subject</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="subjectForm">
+                    <div class="mb-3">
+                        <label for="subject_code" class="form-label">Subject Code</label>
+                        <input type="text" class="form-control" id="subject_code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="subject_title" class="form-label">Subject Title</label>
+                        <input type="text" class="form-control" id="subject_title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="course" class="form-label">Course</label>
+                        <select class="form-select" id="course" required>
+                            {% for course in courses %}
+                            <option value="{{ course.course_abv }}">{{ course.course_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="school_year" class="form-label">School Year</label>
+                        <input type="text" class="form-control" id="school_year" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="semester" class="form-label">Semester</label>
+                        <select class="form-select" id="semester" required>
+                            <option value="1">1st Semester</option>
+                            <option value="2">2nd Semester</option>
+                            <option value="3">Summer</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="year_level" class="form-label">Year Level</label>
+                        <select class="form-select" id="year_level" required>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="section" class="form-label">Section</label>
+                        <input type="text" class="form-control" id="section" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSubject">Save Subject</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#saveSubject').click(function() {
+        const formData = {
+            subject_code: $('#subject_code').val(),
+            subject_title: $('#subject_title').val(),
+            course: $('#course').val(),
+            school_year: $('#school_year').val(),
+            semester: $('#semester').val(),
+            year_level: $('#year_level').val(),
+            section: $('#section').val()
+        };
+
+        $.ajax({
+            url: '/api/subjects/',
+            method: 'POST',
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(response) {
+                location.reload();
+            },
+            error: function(xhr) {
+                alert('Error saving subject: ' + JSON.stringify(xhr.responseJSON));
+            }
+        });
+    });
+
+    // Delete subject
+    $('.delete-subject').click(function() {
+        if (confirm('Are you sure you want to delete this subject?')) {
+            const subjectId = $(this).data('id');
+            $.ajax({
+                url: `/api/subjects/${subjectId}/`,
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function() {
+                    location.reload();
+                },
+                error: function(xhr) {
+                    alert('Error deleting subject');
+                }
+            });
+        }
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

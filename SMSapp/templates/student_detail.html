@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Student Information</h5>
+                    <p><strong>ID:</strong> {{ student.student_id }}</p>
+                    <p><strong>Name:</strong> {{ student.last_name }}, {{ student.first_name }}</p>
+                    <p><strong>Course:</strong> {{ student.course.course_name }}</p>
+                    <p><strong>Year-Section:</strong> {{ student.year_level }}-{{ student.section }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Subjects and Grades</h5>
+                    <div id="subjectsContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grade Edit Modal -->
+<div class="modal fade" id="editGradeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Grade</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="number" class="form-control" id="newGrade">
+                <input type="hidden" id="gradeId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveGrade">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+const studentId = '{{ student.student_id }}';
+
+function loadSubjects() {
+    $.get(`/api/students/${studentId}/subjects/`, function(subjects) {
+        const container = $('#subjectsContainer');
+        subjects = JSON.parse(subjects);
+        
+        subjects.forEach(subject => {
+            const subjectData = subject.fields;
+            const div = $('<div class="subject-card mb-3">');
+            div.append(`<h6>${subjectData.subject_title}</h6>`);
+            
+            loadGrades(subject.pk, div);
+            container.append(div);
+        });
+    });
+}
+
+function loadGrades(subjectCode, container) {
+    $.get(`/api/students/${studentId}/grades/${subjectCode}/`, function(grades) {
+        grades = JSON.parse(grades);
+        const table = $('<table class="table table-sm">');
+        table.append(`
+            <thead>
+                <tr>
+                    <th>Activity</th>
+                    <th>Type</th>
+                    <th>Score</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+        `);
+        
+        const tbody = $('<tbody>');
+        grades.forEach(grade => {
+            const gradeData = grade.fields;
+            tbody.append(`
+                <tr>
+                    <td>${gradeData.activity_name}</td>
+                    <td>${gradeData.activity_type}</td>
+                    <td>${gradeData.student_grade}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary edit-grade" 
+                                data-grade-id="${grade.pk}" 
+                                data-current-grade="${gradeData.student_grade}">
+                            Edit
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+        
+        table.append(tbody);
+        container.append(table);
+    });
+}
+
+$(document).on('click', '.edit-grade', function() {
+    const gradeId = $(this).data('grade-id');
+    const currentGrade = $(this).data('current-grade');
+    
+    $('#gradeId').val(gradeId);
+    $('#newGrade').val(currentGrade);
+    $('#editGradeModal').modal('show');
+});
+
+$('#saveGrade').click(function() {
+    const gradeId = $('#gradeId').val();
+    const newGrade = $('#newGrade').val();
+    
+    $.ajax({
+        url: '/api/grades/update/',
+        method: 'POST',
+        data: JSON.stringify({
+            grade_id: gradeId,
+            new_grade: newGrade
+        }),
+        contentType: 'application/json',
+        success: function(response) {
+            if(response.status === 'success') {
+                $('#editGradeModal').modal('hide');
+                location.reload();
+            }
+        }
+    });
+});
+
+$(document).ready(function() {
+    loadSubjects();
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Courses List</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+            <i class="fas fa-plus"></i> Add Course
+        </button>
+    </div>
+
+    <div id="course-message" class="alert d-none"></div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Course Code</th>
+                    <th>Course Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr>
+                    <td>{{ course.course_abv }}</td>
+                    <td>{{ course.course_name }}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm edit-course" 
+                                data-id="{{ course.course_abv }}"
+                                data-name="{{ course.course_name }}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm delete-course" 
+                                data-id="{{ course.course_abv }}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Course Modal -->
+<div class="modal fade" id="addCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- The form submission is handled by AJAX and processed by the CourseSerializer in the backend -->
+                <form id="courseForm" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="course_abv" class="form-label">Course Code</label>
+                        <input type="text" class="form-control" id="course_abv" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="course_name" class="form-label">Course Name</label>
+                        <input type="text" class="form-control" id="course_name" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" form="courseForm" id="saveCourse">Save Course</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascript %}
+<script>
+console.log('JS block loaded'); // Debug log
+
+if (typeof $ === 'undefined') {
+    alert('jQuery is NOT loaded!');
+} else {
+    console.log('jQuery is loaded!');
+}
+
+window.onerror = function(msg, url, line, col, error) {
+    $('#course-message').removeClass().addClass('alert alert-danger').text('JS Error: ' + msg + ' at ' + line + ':' + col).removeClass('d-none');
+    return false;
+};
+
+$(document).ready(function() {
+    console.log('Page loaded'); // Debug log
+
+    // Use form submit event for reliability
+    $('#courseForm').on('submit', function(e) {
+        e.preventDefault();
+        $('#course-message').addClass('d-none').text('');
+        console.log('Form submit triggered'); // Debug log
+
+        const courseAbv = $('#course_abv').val().trim();
+        const courseName = $('#course_name').val().trim();
+
+        if (!courseAbv || !courseName) {
+            $('#course-message').removeClass().addClass('alert alert-warning').text('Please fill in all fields.').removeClass('d-none');
+            return;
+        }
+
+        const formData = {
+            course_abv: courseAbv,
+            course_name: courseName
+        };
+
+        console.log('Sending data:', formData); // Debug log
+        const csrfToken = $('[name=csrfmiddlewaretoken]').val();
+        console.log('CSRF:', csrfToken); // Debug log
+
+        $.ajax({
+            url: '/api/courses/',
+            type: 'POST',
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader('X-CSRFToken', csrfToken);
+            },
+            success: function(response) {
+                $('#course-message').removeClass().addClass('alert alert-success').text('Course added successfully!').removeClass('d-none');
+                console.log('Success:', response);
+                setTimeout(function() {
+                    $('#addCourseModal').modal('hide');
+                    window.location.reload();
+                }, 1000);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error details:', {
+                    status: xhr.status,
+                    response: xhr.responseText,
+                    error: error
+                });
+                let msg = 'Error saving course: ';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    const err = xhr.responseJSON.error;
+                    if (typeof err === 'object') {
+                        msg += Object.values(err).flat().join(', ');
+                    } else {
+                        msg += err;
+                    }
+                } else if (xhr.responseText) {
+                    msg += xhr.responseText;
+                } else {
+                    msg += error;
+                }
+                $('#course-message').removeClass().addClass('alert alert-danger').text(msg).removeClass('d-none');
+            }
+        });
+    });
+
+    $('.edit-course').click(function() {
+        isEditing = true;
+        editingId = $(this).data('id');
+        $('#course_abv').val(editingId);
+        $('#course_name').val($(this).data('name'));
+        $('#course_abv').prop('readonly', true);
+        $('.modal-title').text('Edit Course');
+        $('#addCourseModal').modal('show');
+    });
+
+    $('#addCourseModal').on('hidden.bs.modal', function () {
+        isEditing = false;
+        editingId = null;
+        $('#course_abv').prop('readonly', false);
+        $('#courseForm').trigger('reset');
+        $('.modal-title').text('Add New Course');
+    });
+
+    $('.delete-course').click(function() {
+        if (confirm('Are you sure you want to delete this course?')) {
+            const courseId = $(this).data('id');
+            $.ajax({
+                url: `/api/courses/${courseId}/`,
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                },
+                success: function() {
+                    location.reload();
+                },
+                error: function(xhr) {
+                    alert('Error deleting course: ' + JSON.stringify(xhr.responseJSON));
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock javascript %}
