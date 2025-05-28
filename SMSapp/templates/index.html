@@ -2,47 +2,55 @@
 {% load static %}
 
 {% block content %}
-
-<div class="hero-section">
-    <div class="container text-center">
-        <h1 class="display-3">Welcome to Student Management System</h1>
-        <p class="lead">A comprehensive solution for educational institution management</p>
-        <div class="mt-4">
-            <a href="#features" class="btn btn-primary btn-lg me-3">Get Started</a>
-            <a href="#" class="btn btn-outline-light btn-lg">Learn More</a>
+<div class="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <!-- Hero Section -->
+    <div class="container mx-auto px-4 py-16">
+        <div class="text-center max-w-3xl mx-auto">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-6">Student Management System</h1>
+            <p class="text-lg text-gray-600 mb-8">Streamline your educational institution with our comprehensive management solution</p>
+            <div class="space-x-4">
+                <a href="#features" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300">Get Started</a>
+                <a href="#" class="inline-block px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-300">Learn More</a>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="container my-5" id="features">
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-user-graduate card-icon"></i>
-                    <h5 class="card-title">Student Management</h5>
-                    <p class="card-text">Efficiently manage student records, attendance, and academic performance.</p>
-                    <a href="#" class="btn btn-primary">Manage Students</a>
+    <!-- Features Section -->
+    <div class="container mx-auto px-4 py-16" id="features">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Student Management Card -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user-graduate text-2xl text-blue-600"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Student Management</h3>
+                    <p class="text-gray-600 mb-4">Efficiently manage student records and academic performance</p>
+                    <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">Manage Students →</a>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-book card-icon"></i>
-                    <h5 class="card-title">Course Management</h5>
-                    <p class="card-text">Organize courses, curricula, and track student progress effectively.</p>
-                    <a href="#" class="btn btn-primary">Manage Courses</a>
+
+            <!-- Course Management Card -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-book text-2xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Course Management</h3>
+                    <p class="text-gray-600 mb-4">Organize courses and track student progress effectively</p>
+                    <a href="#" class="text-green-600 hover:text-green-700 font-medium">Manage Courses →</a>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-chalkboard-teacher card-icon"></i>
-                    <h5 class="card-title">Teacher Management</h5>
-                    <p class="card-text">Handle teacher assignments, schedules, and professional development.</p>
-                    <a href="#" class="btn btn-primary">Manage Teachers</a>
+
+            <!-- Teacher Management Card -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-chalkboard-teacher text-2xl text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Teacher Management</h3>
+                    <p class="text-gray-600 mb-4">Handle teacher assignments and professional development</p>
+                    <a href="#" class="text-purple-600 hover:text-purple-700 font-medium">Manage Teachers →</a>
                 </div>
             </div>
         </div>
