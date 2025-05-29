@@ -10,6 +10,35 @@ class Course(models.Model):
         return self.course_name
 
 
+class StudentManager(models.Manager):
+    def update_student_id(self, old_id, new_data):
+        student = self.get(student_id=old_id)
+        new_id = new_data.get('student_id', old_id)
+        
+        # If ID is changing and new ID doesn't exist
+        if new_id != old_id:
+            # Create new student with new ID
+            self.create(
+                student_id=new_id,
+                last_name=new_data.get('last_name', student.last_name),
+                first_name=new_data.get('first_name', student.first_name),
+                middle_name=new_data.get('middle_name', student.middle_name),
+                course=new_data.get('course', student.course),
+                year_level=new_data.get('year_level', student.year_level),
+                section=new_data.get('section', student.section)
+            )
+            # Delete old student record
+            student.delete()
+            # Get and return the new student record
+            return self.get(student_id=new_id)
+        
+        # If no ID change, just update fields
+        for key, value in new_data.items():
+            setattr(student, key, value)
+        student.save()
+        return student
+
+
 class Student(models.Model):
     student_id = models.CharField(max_length=20, primary_key=True)
     last_name = models.CharField(max_length=50)
@@ -18,6 +47,8 @@ class Student(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     year_level = models.PositiveSmallIntegerField()
     section = models.CharField(max_length=20)
+
+    objects = StudentManager()
 
     def __str__(self):
         return f"{self.student_id} - {self.last_name}, {self.first_name}"

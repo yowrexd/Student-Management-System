@@ -5,7 +5,44 @@ from datetime import date
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = '__all__'
+        fields = ['student_id', 'last_name', 'first_name', 'middle_name', 
+                 'course', 'year_level', 'section']
+
+    def _get_course(self, course_data):
+        if isinstance(course_data, str):
+            try:
+                return Course.objects.get(course_abv=course_data)
+            except Course.DoesNotExist:
+                raise serializers.ValidationError({'course': 'Invalid course abbreviation'})
+        return course_data
+
+    def create(self, validated_data):
+        # Handle course
+        course = validated_data.get('course')
+        validated_data['course'] = self._get_course(course)
+        return Student.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        # Handle course
+        course = validated_data.get('course')
+        if isinstance(course, str):
+            try:
+                validated_data['course'] = Course.objects.get(course_abv=course)
+            except Course.DoesNotExist:
+                raise serializers.ValidationError({'course': 'Invalid course abbreviation'})
+
+        # Update fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.course:
+            data['course'] = instance.course.course_abv
+            data['course_name'] = instance.course.course_name
+        return data
 
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:

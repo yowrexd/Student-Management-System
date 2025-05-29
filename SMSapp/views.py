@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -6,8 +6,9 @@ from django.http import JsonResponse
 from .models import Subject, Activity, StudentSubjectEnrollment, Course, Student
 from .serializers import (
     SubjectSerializer, ActivitySerializer, 
-    StudentSubjectEnrollmentSerializer, CourseSerializer
+    StudentSubjectEnrollmentSerializer, CourseSerializer, StudentSerializer
 )
+from rest_framework.views import APIView
 
 def index(request):
     return render(request, 'index.html')
@@ -278,9 +279,165 @@ class CourseViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'status': 'error', 'message': str(e)}, status=400)
 
+class StudentViewSet(viewsets.ModelViewSet):
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+    lookup_field = 'student_id'
+
+    def create(self, request, *args, **kwargs):
+        try:
+            print("Received data:", request.data)  # Debug log
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid():
+                student = serializer.save()
+                response_serializer = self.get_serializer(student)
+                return Response({
+                    'status': 'success',
+                    'message': 'Student created successfully',
+                    'data': response_serializer.data
+                }, status=status.HTTP_201_CREATED)
+            
+            print("Validation errors:", serializer.errors)  # Debug log
+            return Response({
+                'status': 'error',
+                'message': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print("Exception:", str(e))  # Debug log
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return JsonResponse({
+            'status': 'success',
+            'data': serializer.data
+        })
+
+    def update(self, request, *args, **kwargs):
+        try:
+            old_instance = self.get_object()
+            new_id = request.data.get('student_id')
+            data = request.data.copy()
+
+            # Check if new ID already exists (but ignore if it's the same as current ID)
+            if new_id and new_id != old_instance.student_id:
+                if Student.objects.filter(student_id=new_id).exists():
+                    return Response({
+                        'status': 'error',
+                        'message': f'Student ID {new_id} already exists'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = self.get_serializer(old_instance, data=data, partial=True)
+            if serializer.is_valid():
+                try:
+                    # Use the custom manager method to handle ID changes
+                    updated_student = Student.objects.update_student_id(
+                        old_instance.student_id, 
+                        serializer.validated_data
+                    )
+                    return Response({
+                        'status': 'success',
+                        'data': self.get_serializer(updated_student).data,
+                        'message': 'Student updated successfully'
+                    })
+                except Student.DoesNotExist:
+                    return Response({
+                        'status': 'error',
+                        'message': 'Student not found'
+                    }, status=status.HTTP_404_NOT_FOUND)
+                except Exception as e:
+                    return Response({
+                        'status': 'error',
+                        'message': str(e)
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({
+                'status': 'error',
+                'message': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print("Error updating student:", str(e))
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            instance.delete()
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Student deleted successfully'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+
+class StudentAPIView(APIView):
+    def get(self, request):
+        students = Student.objects.all()
+        serializer = StudentSerializer(students, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = StudentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'status': 'success',
+                'data': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            'status': 'error',
+            'message': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+class StudentDetailAPIView(APIView):
+    def get_object(self, student_id):
+        return get_object_or_404(Student, student_id=student_id)
+
+    def get(self, request, student_id):
+        student = self.get_object(student_id)
+        serializer = StudentSerializer(student)
+        return Response({
+            'status': 'success',
+            'data': serializer.data
+        })
+
+    def put(self, request, student_id):
+        student = self.get_object(student_id)
+        serializer = StudentSerializer(student, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'status': 'success',
+                'data': serializer.data
+            })
+        return Response({
+            'status': 'error',
+            'message': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, student_id):
+        student = self.get_object(student_id)
+        student.delete()
+        return Response({
+            'status': 'success',
+            'message': 'Student deleted successfully'
+        })
+
 def courses(request):
     return render(request, 'courses.html', {'courses': Course.objects.all()})
 
 def students(request):
     students = Student.objects.all().select_related('course')
-    return render(request, 'students.html', {'students': students})
+    courses = Course.objects.all()
+    return render(request, 'students.html', {'students': students, 'courses': courses})

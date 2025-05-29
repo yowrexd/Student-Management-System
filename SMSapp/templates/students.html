@@ -18,7 +18,7 @@
         <div class="modal-dialog modal-dialog-centered" style="max-width: 600px; width: 95%;">
             <div class="modal-content border-0 shadow-lg rounded-lg">
                 <div class="modal-body p-8">
-                    <form id="studentForm" method="POST">
+                    <form id="studentForm" method="POST" onsubmit="return submitForm(this, 'addStudentModal')">
                         {% csrf_token %}
                         <div class="grid gap-6 mb-8">
                             <div>
@@ -40,7 +40,7 @@
                                     <select class="w-full p-2 border rounded" id="course" name="course" required>
                                         <option value="" disabled selected>Select Course</option>
                                         {% for course in courses %}
-                                            <option value="{{ course.pk }}">{{ course.course_name }}</option>
+                                            <option value="{{ course.course_abv }}">{{ course.course_name }} ({{ course.course_abv }})</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -81,7 +81,7 @@
                     <tr data-student-id="{{ student.student_id }}" class="hover:bg-gray-50">
                         <td class="px-6 py-4">{{ student.student_id }}</td>
                         <td class="px-6 py-4">{{ student.last_name }}, {{ student.first_name }} {% if student.middle_name %}{{ student.middle_name }}{% endif %}</td>
-                        <td class="px-6 py-4">{{ student.course.course_name }}</td>
+                        <td class="px-6 py-4">{{ student.course.course_abv }}</td>
                         <td class="px-6 py-4">{{ student.year_level }}</td>
                         <td class="px-6 py-4">{{ student.section }}</td>
                         <td class="px-6 py-4">
@@ -108,7 +108,7 @@
                         {% csrf_token %}
                         <div class="grid gap-6 mb-8">
                             <div>
-                                <input type="text" class="w-full p-2 border rounded" id="edit_student_id" name="student_id" placeholder="Student ID" readonly>
+                                <input type="text" class="w-full p-2 border rounded" id="edit_student_id" name="student_id" placeholder="Student ID" required>
                             </div>
                             <div class="grid grid-cols-3 gap-4">
                                 <div>
@@ -126,7 +126,7 @@
                                     <select class="w-full p-2 border rounded" id="edit_course" name="course" required>
                                         <option value="" disabled selected>Select Course</option>
                                         {% for course in courses %}
-                                            <option value="{{ course.pk }}">{{ course.course_name }}</option>
+                                            <option value="{{ course.course_abv }}">{{ course.course_name }} ({{ course.course_abv }})</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -156,10 +156,18 @@ function openModal() {
     myModal.show();
 }
 
-function submitForm(formId, modalId) {
-    const form = document.getElementById(formId);
+function submitForm(form, modalId) {
+    event.preventDefault();
     const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
+    const data = {};
+    
+    formData.forEach((value, key) => {
+        if (key !== 'csrfmiddlewaretoken') {
+            data[key] = value;
+        }
+    });
+    
+    console.log('Submitting data:', data);
     
     fetch('/api/students/', {
         method: 'POST',
@@ -169,44 +177,86 @@ function submitForm(formId, modalId) {
         },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
-            modal.hide();
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('There is already a student with this ID');
+        }
+        return response.json();
+    })
+    .then(result => {
+        console.log('Server response:', result);
+        if (result.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById(modalId)).hide();
             window.location.reload();
         } else {
-            throw new Error(data.message || 'Failed to create student');
+            throw new Error(result.message || 'Failed to create student');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert(error.message || 'An error occurred while processing your request');
+        alert(error.message || 'An error occurred while saving the student');
     });
 
     return false;
 }
 
-document.getElementById('studentForm').addEventListener('submit', function(e) {
+document.getElementById('editStudentForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    submitForm('studentForm', 'addStudentModal');
+    const formData = new FormData(this);
+    const data = {};
+    const oldId = document.getElementById('edit_student_id').getAttribute('data-original-id');
+    
+    formData.forEach((value, key) => {
+        if (key !== 'csrfmiddlewaretoken') {
+            data[key] = value;
+        }
+    });
+
+    fetch(`/api/students/${oldId}/`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('editStudentModal')).hide();
+            window.location.reload();
+        } else if (result.status === 'error') {
+            alert(result.message || 'Failed to update student');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message || 'An error occurred while updating the student');
+    });
 });
 
 function editStudent(studentId) {
     fetch(`/api/students/${studentId}/`)
     .then(response => response.json())
-    .then(data => {
-        const form = document.getElementById('editStudentForm');
-        form.querySelector('#edit_student_id').value = data.student_id;
-        form.querySelector('#edit_last_name').value = data.last_name;
-        form.querySelector('#edit_first_name').value = data.first_name;
-        form.querySelector('#edit_middle_name').value = data.middle_name || '';
-        form.querySelector('#edit_course').value = data.course;
-        form.querySelector('#edit_year_level').value = data.year_level;
-        form.querySelector('#edit_section').value = data.section;
+    .then(result => {
+        if (result.status === 'success') {
+            const data = result.data;
+            const form = document.getElementById('editStudentForm');
+            const studentIdInput = form.querySelector('#edit_student_id');
+            studentIdInput.value = data.student_id;
+            studentIdInput.setAttribute('data-original-id', data.student_id);
+            form.querySelector('#edit_last_name').value = data.last_name;
+            form.querySelector('#edit_first_name').value = data.first_name;
+            form.querySelector('#edit_middle_name').value = data.middle_name || '';
+            form.querySelector('#edit_course').value = data.course;
+            form.querySelector('#edit_year_level').value = data.year_level;
+            form.querySelector('#edit_section').value = data.section;
 
-        var editModal = new bootstrap.Modal(document.getElementById('editStudentModal'));
-        editModal.show();
+            var editModal = new bootstrap.Modal(document.getElementById('editStudentModal'));
+            editModal.show();
+        } else {
+            throw new Error(result.message || 'Failed to load student data');
+        }
     })
     .catch(error => {
         console.error('Error:', error);
@@ -215,61 +265,26 @@ function editStudent(studentId) {
 }
 
 function deleteStudent(studentId) {
-    if (confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        
+    if (confirm('Are you sure you want to delete this student?')) {
         fetch(`/api/students/${studentId}/`, {
             method: 'DELETE',
             headers: {
-                'X-CSRFToken': csrfToken,
-                'Content-Type': 'application/json'
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
             }
         })
         .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                const row = document.querySelector(`tr[data-student-id="${studentId}"]`);
-                if (row) row.remove();
-                alert('Student deleted successfully');
+        .then(result => {
+            if (result.status === 'success') {
+                document.querySelector(`tr[data-student-id="${studentId}"]`).remove();
             } else {
-                throw new Error(data.message || 'Failed to delete student');
+                throw new Error(result.message || 'Failed to delete student');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert(error.message || 'An error occurred while deleting the student');
+            alert(error.message || 'An error occurred');
         });
     }
 }
-
-document.getElementById('editStudentForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const form = this;
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    const studentId = data.student_id;
-
-    fetch(`/api/students/${studentId}/`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            bootstrap.Modal.getInstance(document.getElementById('editStudentModal')).hide();
-            window.location.reload();
-        } else {
-            throw new Error(data.message || 'Failed to update student');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert(error.message || 'An error occurred while updating the student');
-    });
-});
 </script>
 {% endblock %}
