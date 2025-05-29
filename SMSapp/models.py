@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class Course(models.Model):
     course_abv = models.CharField(max_length=10, primary_key=True)
@@ -65,6 +66,7 @@ class Activity(models.Model):
     activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPE_CHOICES)
     activity_name = models.CharField(max_length=100)
     total_items = models.PositiveIntegerField()
+    date_assigned = models.DateField(default=timezone.now)  # Changed from auto_now_add to default
 
     def __str__(self):
         return f"{self.activity_name} ({self.subject})"

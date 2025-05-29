@@ -4,6 +4,7 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'api/subjects', views.SubjectViewSet)
+router.register(r'api/activities', views.ActivityViewSet)  # Add this line
 
 urlpatterns = [
     path('', views.index, name='index'),
