@@ -85,7 +85,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     {% for subject in subjects %}
-                    <tr data-subject-code="{{ subject.subject_code }}">
+                    <tr data-subject-code="{{ subject.subject_code }}" class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='{% url 'subject_info' subject.subject_code %}'">
                         <td class="px-6 py-4">{{ subject.subject_code }}</td>
                         <td class="px-6 py-4">{{ subject.subject_title }}</td>
                         <td class="px-6 py-4">{{ subject.course.course_name }}</td>

@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from .models import Subject, Course
+from .models import Subject, Course, Activity, StudentSubjectEnrollment
 from .serializers import SubjectSerializer, CourseSerializer
 
 def index(request):
@@ -15,6 +15,18 @@ def subjects(request):
         'courses': courses,
     }
     return render(request, 'subjects.html', context)
+
+def subject_info(request, subject_code):
+    subject = Subject.objects.get(subject_code=subject_code)
+    activities = Activity.objects.filter(subject=subject)
+    enrolled_students = StudentSubjectEnrollment.objects.filter(subject=subject).select_related('student')
+    
+    context = {
+        'subject': subject,
+        'activities': activities,
+        'enrolled_students': enrolled_students,
+    }
+    return render(request, 'subjectinfo.html', context)
 
 class SubjectViewSet(viewsets.ModelViewSet):
     queryset = Subject.objects.filter(archive=False)
