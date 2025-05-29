@@ -122,7 +122,13 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Total Items</label>
-                                <input type="number" name="total_items" class="w-full p-2 border rounded-lg" min="1" required>
+                                <input type="number" 
+                                       name="total_items" 
+                                       class="w-full p-2 border rounded-lg" 
+                                       min="1" 
+                                       inputmode="numeric" 
+                                       pattern="[0-9]*"
+                                       required>
                             </div>
                         </div>
                         <div class="flex justify-end gap-3 mt-6">
@@ -167,7 +173,14 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Total Items</label>
-                                <input type="number" id="edit_total_items" name="total_items" class="w-full p-2 border rounded-lg" min="1" required>
+                                <input type="number" 
+                                       id="edit_total_items" 
+                                       name="total_items" 
+                                       class="w-full p-2 border rounded-lg" 
+                                       min="1" 
+                                       inputmode="numeric" 
+                                       pattern="[0-9]*"
+                                       required>
                             </div>
                         </div>
                         <div class="flex justify-end gap-3 mt-6">
@@ -220,6 +233,17 @@
 </div>
 
 <script>
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function handleResponse(response) {
+    if (!response.ok) {
+        return response.json().then(err => Promise.reject(err));
+    }
+    return response.json();
+}
+
 const classworkBtn = document.getElementById('classworkBtn');
 const studentsBtn = document.getElementById('studentsBtn');
 const classworkSection = document.getElementById('classworkSection');
@@ -256,17 +280,23 @@ function openClassworkModal() {
 document.getElementById('classworkForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
-    const data = Object.fromEntries(formData);
+    const data = {
+        subject: formData.get('subject'),
+        activity_type: formData.get('activity_type'),
+        activity_name: formData.get('activity_name'),
+        total_items: parseInt(formData.get('total_items'))
+    };
 
     fetch('/api/activities/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-CSRFToken': getCSRFToken(),
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'same-origin'
     })
-    .then(response => response.json())
+    .then(handleResponse)
     .then(data => {
         if (data.status === 'success') {
             bootstrap.Modal.getInstance(document.getElementById('addClassworkModal')).hide();
@@ -277,7 +307,7 @@ document.getElementById('classworkForm').addEventListener('submit', function(e) 
     })
     .catch(error => {
         console.error('Error:', error);
-        alert(error.message || 'An error occurred while adding the classwork');
+        alert(error.message || 'Failed to add classwork');
     });
 });
 
@@ -295,22 +325,27 @@ function filterActivities() {
 }
 
 function editActivity(activityId) {
-    fetch(`/api/activities/${activityId}/`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('edit_activity_id').value = data.activity_id;
-            document.getElementById('edit_activity_type').value = data.activity_type;
-            document.getElementById('edit_activity_name').value = data.activity_name;
-            document.getElementById('edit_total_items').value = data.total_items;
-            document.getElementById('edit_date_assigned').value = data.date_assigned;
+    fetch(`/api/activities/${activityId}/`, {
+        credentials: 'same-origin'
+    })
+    .then(handleResponse)
+    .then(result => {
+        if (result.status === 'success' && result.data) {
+            document.getElementById('edit_activity_id').value = result.data.activity_id;
+            document.getElementById('edit_activity_type').value = result.data.activity_type;
+            document.getElementById('edit_activity_name').value = result.data.activity_name;
+            document.getElementById('edit_total_items').value = result.data.total_items;
 
             const modal = new bootstrap.Modal(document.getElementById('editClassworkModal'));
             modal.show();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to load activity data');
-        });
+        } else {
+            throw new Error(result.message || 'Failed to load activity data');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to load activity data. Please try again.');
+    });
 }
 
 function deleteActivity(activityId) {
@@ -318,19 +353,21 @@ function deleteActivity(activityId) {
         fetch(`/api/activities/${activityId}/`, {
             method: 'DELETE',
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            }
+                'X-CSRFToken': getCSRFToken(),
+            },
+            credentials: 'same-origin'
         })
-        .then(response => {
-            if (response.ok) {
+        .then(handleResponse)
+        .then(data => {
+            if (data.status === 'success') {
                 window.location.reload();
             } else {
-                throw new Error('Failed to delete classwork');
+                throw new Error(data.message || 'Failed to delete classwork');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Failed to delete classwork');
+            alert(error.message || 'Failed to delete classwork');
         });
     }
 }
@@ -339,20 +376,31 @@ document.getElementById('editClassworkForm').addEventListener('submit', function
     e.preventDefault();
     const formData = new FormData(this);
     const activityId = formData.get('activity_id');
-    const data = Object.fromEntries(formData);
+    const data = {
+        activity_type: formData.get('activity_type'),
+        activity_name: formData.get('activity_name'),
+        total_items: parseInt(formData.get('total_items')),
+        subject: '{{ subject.subject_code }}'  // Add this line to include subject
+    };
 
     fetch(`/api/activities/${activityId}/`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-CSRFToken': getCSRFToken(),
         },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.status === 'success') {
-            bootstrap.Modal.getInstance(document.getElementById('editClassworkModal')).hide();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editClassworkModal'));
+            modal.hide();
             window.location.reload();
         } else {
             throw new Error(data.message || 'Failed to update classwork');
@@ -363,5 +411,34 @@ document.getElementById('editClassworkForm').addEventListener('submit', function
         alert(error.message || 'An error occurred while updating the classwork');
     });
 });
+
+// Replace the fetch calls with the new API endpoints
+function loadSubjectInfo() {
+    fetch(`/api/subjects/${subjectCode}/info/`)
+        .then(response => response.json())
+        .then(data => {
+            // Update the UI with the received data
+            updateSubjectInfo(data.subject);
+            updateActivities(data.activities);
+            updateEnrollments(data.enrollments);
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Add function to update the UI sections
+function updateSubjectInfo(subject) {
+    // Update subject info card
+}
+
+function updateActivities(activities) {
+    // Update activities table
+}
+
+function updateEnrollments(enrollments) {
+    // Update enrollments table
+}
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', loadSubjectInfo);
 </script>
 {% endblock %}
