@@ -34,7 +34,7 @@
                                     <select class="w-full p-2 border rounded" id="course" name="course">
                                         <option value="" selected>Select Course</option>
                                         {% for course in courses %}
-                                            <option value="{{ course.pk }}">{{ course.course_name }}</option>
+                                            <option value="{{ course.pk }}">{{ course.course_abv }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -88,7 +88,7 @@
                     <tr data-subject-code="{{ subject.subject_code }}" class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='{% url 'subject_info' subject.subject_code %}'">
                         <td class="px-6 py-4">{{ subject.subject_code }}</td>
                         <td class="px-6 py-4">{{ subject.subject_title }}</td>
-                        <td class="px-6 py-4">{{ subject.course.course_name }}</td>
+                        <td class="px-6 py-4">{{ subject.course.course_abv }}</td>
                         <td class="px-6 py-4">{{ subject.year_level }}</td>
                         <td class="px-6 py-4">{{ subject.section }}</td>
                         <td class="px-6 py-4">
@@ -127,7 +127,7 @@
                                     <select class="w-full p-2 border rounded" id="edit_course" name="course">
                                         <option value="" selected>Select Course</option>
                                         {% for course in courses %}
-                                            <option value="{{ course.pk }}">{{ course.course_name }}</option>
+                                            <option value="{{ course.pk }}">{{ course.course_abv }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>

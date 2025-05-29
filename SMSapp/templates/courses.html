@@ -173,12 +173,12 @@ document.getElementById('editCourseForm').addEventListener('submit', function(e)
         if (data.status === 'success') {
             location.reload();
         } else {
-            alert(data.message || 'Error updating course');
+            throw new Error(data.message || 'Error updating course');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while updating the course');
+        alert(error.message || 'An error occurred while updating the course');
     });
 });
 

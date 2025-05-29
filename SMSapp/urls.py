@@ -6,6 +6,7 @@ router = DefaultRouter()
 router.register(r'subjects', views.SubjectViewSet, basename='api-subjects')
 router.register(r'activities', views.ActivityViewSet, basename='api-activities')
 router.register(r'enrollments', views.EnrollmentViewSet, basename='api-enrollments')
+router.register(r'courses', views.CourseViewSet, basename='api-courses')  # Add this line
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -15,6 +16,5 @@ urlpatterns = [
     path('subjects/<str:subject_code>/', views.subject_info, name='subject_info'),
     path('students/', views.students, name='students'),
     path('courses/', views.courses, name='courses'),
-    path('api/courses/', views.api_courses, name='api-courses'),
-    path('api/courses/<str:course_abv>/', views.api_course_detail, name='api-course-detail'),
+    # Remove the old api/courses URLs as they're handled by the router
 ]

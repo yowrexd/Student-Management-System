@@ -3,10 +3,10 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.http import JsonResponse
-from .models import Subject, Activity, StudentSubjectEnrollment, Course
+from .models import Subject, Activity, StudentSubjectEnrollment, Course, Student
 from .serializers import (
     SubjectSerializer, ActivitySerializer, 
-    StudentSubjectEnrollmentSerializer
+    StudentSubjectEnrollmentSerializer, CourseSerializer
 )
 
 def index(request):
@@ -223,67 +223,64 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(subject__subject_code=subject_code)
         return queryset
 
+class CourseViewSet(viewsets.ModelViewSet):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    lookup_field = 'course_abv'
 
-def students(request):
-    return render(request, 'students.html')
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return Response({'status': 'success', 'data': serializer.data})
+        return Response({'status': 'error', 'message': serializer.errors}, status=400)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            old_course = self.get_object()
+            new_data = request.data
+            
+            # If the course code is changing, we need to handle related records
+            if new_data['course_abv'] != old_course.course_abv:
+                # Update all related records to point to the new course code
+                Student.objects.filter(course=old_course).update(course=new_data['course_abv'])
+                Subject.objects.filter(course=old_course).update(course=new_data['course_abv'])
+                
+                # Delete the old course and create a new one
+                old_course.delete()
+                new_course = Course.objects.create(
+                    course_abv=new_data['course_abv'],
+                    course_name=new_data['course_name']
+                )
+                serializer = self.get_serializer(new_course)
+            else:
+                # If only the name is changing, use normal update
+                serializer = self.get_serializer(old_course, data=new_data)
+                if serializer.is_valid():
+                    serializer.save()
+            
+            return Response({
+                'status': 'success',
+                'data': serializer.data,
+                'message': 'Course updated successfully'
+            })
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            self.perform_destroy(instance)
+            return Response({'status': 'success'})
+        except Exception as e:
+            return Response({'status': 'error', 'message': str(e)}, status=400)
 
 def courses(request):
-    courses = Course.objects.all()
-    return render(request, 'courses.html', {'courses': courses})
+    return render(request, 'courses.html', {'courses': Course.objects.all()})
 
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-import json
-
-@require_http_methods(["GET", "POST"])
-def api_courses(request):
-    if request.method == "GET":
-        courses = Course.objects.all()
-        return JsonResponse({'status': 'success', 'courses': list(courses.values())})
-    
-    elif request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            course = Course.objects.create(
-                course_abv=data['course_abv'],
-                course_name=data['course_name']
-            )
-            return JsonResponse({'status': 'success'})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-
-@require_http_methods(["GET", "PUT", "DELETE"])
-def api_course_detail(request, course_abv):
-    try:
-        course = Course.objects.get(course_abv=course_abv)
-        
-        if request.method == "GET":
-            return JsonResponse({
-                'course_abv': course.course_abv,
-                'course_name': course.course_name
-            })
-            
-        elif request.method == "PUT":
-            data = json.loads(request.body)
-            # If course_abv is changed, create new course and delete old one
-            if data['course_abv'] != course_abv:
-                # Delete old course
-                old_course_abv = course.course_abv
-                Course.objects.create(
-                    course_abv=data['course_abv'],
-                    course_name=data['course_name']
-                )
-                Course.objects.get(course_abv=old_course_abv).delete()
-            else:
-                course.course_name = data['course_name']
-                course.save()
-            return JsonResponse({'status': 'success'})
-            
-        elif request.method == "DELETE":
-            course.delete()
-            return JsonResponse({'status': 'success'})
-            
-    except Course.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Course not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+def students(request):
+    students = Student.objects.all().select_related('course')
+    return render(request, 'students.html', {'students': students})

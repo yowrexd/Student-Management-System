@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Subject, Activity, StudentSubjectEnrollment, Student
+from .models import Subject, Activity, StudentSubjectEnrollment, Student, Course
 from datetime import date
 
 class StudentSerializer(serializers.ModelSerializer):
@@ -49,3 +49,8 @@ class StudentSubjectEnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentSubjectEnrollment
         fields = '__all__'
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['course_abv', 'course_name']
