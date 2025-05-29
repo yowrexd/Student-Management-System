@@ -9,8 +9,9 @@ router.register(r'enrollments', views.EnrollmentViewSet, basename='api-enrollmen
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('api/', include(router.urls)),
     path('index/', views.index, name='index'),
     path('subjects/', views.subjects, name='subjects'),
     path('subjects/<str:subject_code>/', views.subject_info, name='subject_info'),
-    path('api/', include(router.urls)),
+    path('students/', views.students, name='students'),
 ]

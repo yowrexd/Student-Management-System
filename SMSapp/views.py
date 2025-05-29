@@ -12,6 +12,7 @@ from .serializers import (
 def index(request):
     return render(request, 'index.html')
 
+# default view for subjects
 def subjects(request):
     subjects = Subject.objects.filter(archive=False).select_related('course')
     courses = Course.objects.all()
@@ -21,6 +22,7 @@ def subjects(request):
     }
     return render(request, 'subjects.html', context)
 
+# view for subject details including activities and enrolled students
 def subject_info(request, subject_code):
     subject = Subject.objects.get(subject_code=subject_code)
     activities = Activity.objects.filter(subject=subject)
@@ -221,3 +223,6 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(subject__subject_code=subject_code)
         return queryset
 
+
+def students(request):
+    return render(request, 'students.html')
