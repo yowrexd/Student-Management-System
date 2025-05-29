@@ -226,3 +226,64 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
 
 def students(request):
     return render(request, 'students.html')
+
+def courses(request):
+    courses = Course.objects.all()
+    return render(request, 'courses.html', {'courses': courses})
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+import json
+
+@require_http_methods(["GET", "POST"])
+def api_courses(request):
+    if request.method == "GET":
+        courses = Course.objects.all()
+        return JsonResponse({'status': 'success', 'courses': list(courses.values())})
+    
+    elif request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            course = Course.objects.create(
+                course_abv=data['course_abv'],
+                course_name=data['course_name']
+            )
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@require_http_methods(["GET", "PUT", "DELETE"])
+def api_course_detail(request, course_abv):
+    try:
+        course = Course.objects.get(course_abv=course_abv)
+        
+        if request.method == "GET":
+            return JsonResponse({
+                'course_abv': course.course_abv,
+                'course_name': course.course_name
+            })
+            
+        elif request.method == "PUT":
+            data = json.loads(request.body)
+            # If course_abv is changed, create new course and delete old one
+            if data['course_abv'] != course_abv:
+                # Delete old course
+                old_course_abv = course.course_abv
+                Course.objects.create(
+                    course_abv=data['course_abv'],
+                    course_name=data['course_name']
+                )
+                Course.objects.get(course_abv=old_course_abv).delete()
+            else:
+                course.course_name = data['course_name']
+                course.save()
+            return JsonResponse({'status': 'success'})
+            
+        elif request.method == "DELETE":
+            course.delete()
+            return JsonResponse({'status': 'success'})
+            
+    except Course.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Course not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

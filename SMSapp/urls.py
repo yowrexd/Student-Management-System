@@ -14,4 +14,7 @@ urlpatterns = [
     path('subjects/', views.subjects, name='subjects'),
     path('subjects/<str:subject_code>/', views.subject_info, name='subject_info'),
     path('students/', views.students, name='students'),
+    path('courses/', views.courses, name='courses'),
+    path('api/courses/', views.api_courses, name='api-courses'),
+    path('api/courses/<str:course_abv>/', views.api_course_detail, name='api-course-detail'),
 ]
