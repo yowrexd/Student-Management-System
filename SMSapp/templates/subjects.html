@@ -92,10 +92,10 @@
                         <td class="px-6 py-4">{{ subject.year_level }}</td>
                         <td class="px-6 py-4">{{ subject.section }}</td>
                         <td class="px-6 py-4">
-                            <button onclick="editSubject('{{ subject.subject_code }}')" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <button onclick="event.stopPropagation(); editSubject('{{ subject.subject_code }}')" class="text-blue-600 hover:text-blue-900 mr-3">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button onclick="deleteSubject('{{ subject.subject_code }}')" class="text-red-600 hover:text-red-900">
+                            <button onclick="event.stopPropagation(); deleteSubject('{{ subject.subject_code }}')" class="text-red-600 hover:text-red-900">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -185,39 +185,75 @@ function openModal() {
     myModal.show();
 }
 
-function submitForm(formId, modalId) {  // Removed url parameter
+function submitForm(formId, modalId) {
     const form = document.getElementById(formId);
     const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
+    
+    // Convert FormData to plain object and ensure proper data types
+    const data = {};
+    formData.forEach((value, key) => {
+        if (key === 'year_level' || key === 'semester') {
+            data[key] = parseInt(value, 10);
+        } else if (key === 'course') {
+            data[key] = value || null;  // Handle empty course selection
+        } else if (key !== 'csrfmiddlewaretoken') {
+            data[key] = value;
+        }
+    });
+    
+    // Debug log
+    console.log('Sending data:', data);
     
     fetch('/api/subjects/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
         },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
+    .then(response => {
+        // Debug log
+        console.log('Response status:', response.status);
+        return response.json().then(data => ({
+            status: response.status,
+            body: data
+        }));
+    })
+    .then(({status, body}) => {
+        // Debug log
+        console.log('Response body:', body);
+        
+        if (status === 200 || status === 201) {
             const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
-            if (modal) {
-                modal.hide();
-            }
-            alert(data.message);
+            modal.hide();
+            alert('Subject created successfully');
             window.location.reload();
         } else {
-            alert(data.message || 'An error occurred');
+            let errorMessage = 'Failed to create subject: ';
+            if (typeof body.message === 'object') {
+                errorMessage += Object.entries(body.message)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ');
+            } else {
+                errorMessage += body.message;
+            }
+            throw new Error(errorMessage);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while processing your request');
+        alert(error.message || 'An error occurred while processing your request');
     });
 
     return false;
 }
+
+// Update the form submission handler
+document.getElementById('subjectForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitForm('subjectForm', 'addSubjectModal');
+});
 
 function editSubject(subjectCode) {
     fetch(`/api/subjects/${subjectCode}/`, {
@@ -305,11 +341,5 @@ document.getElementById('editSubjectForm').addEventListener('submit', function(e
         alert(error.message || 'An error occurred while updating the subject');
     });
 });
-
-// Update the form submission handler
-document.getElementById('subjectForm').onsubmit = function(e) {
-    e.preventDefault();
-    submitForm('subjectForm', 'addSubjectModal');  // Removed URL parameter
-};
 </script>
 {% endblock %}

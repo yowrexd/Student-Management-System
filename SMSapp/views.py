@@ -40,6 +40,7 @@ class SubjectViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
+            print("Received data:", request.data)  # Debug print
             serializer = self.get_serializer(data=request.data)
             if serializer.is_valid():
                 self.perform_create(serializer)
@@ -48,15 +49,19 @@ class SubjectViewSet(viewsets.ModelViewSet):
                     'message': 'Subject created successfully',
                     'data': serializer.data
                 })
+            print("Validation errors:", serializer.errors)  # Debug print
             return JsonResponse({
                 'status': 'error',
                 'message': serializer.errors
             }, status=400)
         except Exception as e:
+            import traceback
+            print("Exception:", str(e))  # Debug print
+            print("Traceback:", traceback.format_exc())  # Debug print
             return JsonResponse({
                 'status': 'error',
-                'message': str(e)
-            }, status=400)
+                'message': f"Server error: {str(e)}"
+            }, status=500)
 
     def update(self, request, *args, **kwargs):
         try:
