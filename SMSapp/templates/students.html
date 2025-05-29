@@ -126,7 +126,7 @@
                                     <select class="w-full p-2 border rounded" id="edit_course" name="course" required>
                                         <option value="" disabled selected>Select Course</option>
                                         {% for course in courses %}
-                                            <option value="{{ course.course_abv }}">{{ course.course_name }} ({{ course.course_abv }})</option>
+                                            <option value="{{ course.course_abv }}">{{ course.course_abv }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>

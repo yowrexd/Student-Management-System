@@ -44,7 +44,7 @@ class Student(models.Model):
     last_name = models.CharField(max_length=50)
     first_name = models.CharField(max_length=50)
     middle_name = models.CharField(max_length=50, blank=True, null=True)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True)
     year_level = models.PositiveSmallIntegerField()
     section = models.CharField(max_length=20)
 
