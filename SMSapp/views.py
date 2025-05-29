@@ -9,6 +9,7 @@ from .serializers import (
     StudentSubjectEnrollmentSerializer, CourseSerializer, StudentSerializer
 )
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 
 def index(request):
     return render(request, 'index.html')
@@ -37,6 +38,7 @@ def subject_info(request, subject_code):
     return render(request, 'subjectinfo.html', context)
 
 class SubjectViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
     queryset = Subject.objects.filter(archive=False)
     serializer_class = SubjectSerializer
     lookup_field = 'subject_code'
@@ -124,6 +126,7 @@ class SubjectViewSet(viewsets.ModelViewSet):
             }, status=400)
 
 class ActivityViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
     queryset = Activity.objects.all()
     serializer_class = ActivitySerializer
     lookup_field = 'activity_id'
@@ -214,6 +217,7 @@ class ActivityViewSet(viewsets.ModelViewSet):
         return queryset
 
 class EnrollmentViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
     queryset = StudentSubjectEnrollment.objects.all()
     serializer_class = StudentSubjectEnrollmentSerializer
 
@@ -225,6 +229,7 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
         return queryset
 
 class CourseViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     lookup_field = 'course_abv'
@@ -280,6 +285,7 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({'status': 'error', 'message': str(e)}, status=400)
 
 class StudentViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
     lookup_field = 'student_id'
@@ -382,6 +388,7 @@ class StudentViewSet(viewsets.ModelViewSet):
             }, status=400)
 
 class StudentAPIView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request):
         students = Student.objects.all()
         serializer = StudentSerializer(students, many=True)
@@ -401,6 +408,7 @@ class StudentAPIView(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 class StudentDetailAPIView(APIView):
+    permission_classes = [AllowAny]
     def get_object(self, student_id):
         return get_object_or_404(Student, student_id=student_id)
 
