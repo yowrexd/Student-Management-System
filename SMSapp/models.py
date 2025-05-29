@@ -30,15 +30,18 @@ class Subject(models.Model):
 
     subject_code = models.CharField(max_length=20, primary_key=True)
     subject_title = models.CharField(max_length=100)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True)  # Make course optional
     school_year = models.CharField(max_length=20)
     semester = models.PositiveSmallIntegerField(choices=SEMESTER_CHOICES)
     year_level = models.PositiveSmallIntegerField()
     section = models.CharField(max_length=20)
     archive = models.BooleanField(default=False)
 
+    class Meta:
+        ordering = ['subject_code']
+
     def __str__(self):
-        return self.subject_title
+        return f"{self.subject_code} - {self.subject_title}"
 
 
 class StudentSubjectEnrollment(models.Model):
