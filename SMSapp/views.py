@@ -30,10 +30,17 @@ def subject_info(request, subject_code):
     activities = Activity.objects.filter(subject=subject)
     enrolled_students = StudentSubjectEnrollment.objects.filter(subject=subject).select_related('student')
     
+    # Get unique courses and sections from existing students
+    all_students = Student.objects.all()
+    student_courses = Course.objects.filter(student__in=all_students).distinct()
+    student_sections = all_students.values_list('section', flat=True).distinct()
+    
     context = {
         'subject': subject,
         'activities': activities,
         'enrolled_students': enrolled_students,
+        'student_courses': student_courses,
+        'student_sections': student_sections,
     }
     return render(request, 'subjectinfo.html', context)
 
@@ -227,6 +234,68 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
         if subject_code:
             queryset = queryset.filter(subject__subject_code=subject_code)
         return queryset
+
+    @action(detail=False, methods=['post'])
+    def bulk_enroll(self, request):
+        try:
+            subject_code = request.data.get('subject_code')
+            student_ids = request.data.get('student_ids', [])
+            
+            subject = Subject.objects.get(subject_code=subject_code)
+            
+            # Create enrollments for each student
+            for student_id in student_ids:
+                # Skip if already enrolled
+                if not StudentSubjectEnrollment.objects.filter(
+                    subject=subject,
+                    student_id=student_id
+                ).exists():
+                    StudentSubjectEnrollment.objects.create(
+                        subject=subject,
+                        student_id=student_id
+                    )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Students enrolled successfully'
+            })
+        except Subject.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Subject not found'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+
+    @action(detail=False, methods=['post'])
+    def remove_student(self, request):
+        try:
+            subject_code = request.data.get('subject_code')
+            student_id = request.data.get('student_id')
+            
+            enrollment = StudentSubjectEnrollment.objects.filter(
+                subject__subject_code=subject_code,
+                student__student_id=student_id
+            )
+            
+            if enrollment.exists():
+                enrollment.delete()
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Student removed successfully'
+                })
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Student enrollment not found'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
 
 class CourseViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
