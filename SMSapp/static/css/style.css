@@ -47,11 +47,11 @@
 }
 
 #sidebar ul li a:hover {
-    background: var(--primary-light);
+    background: var(--primary-color);
 }
 
 #sidebar ul li.active > a {
-    background: var(--primary-light);
+    background: var(--primary-color);
 }
 
 #sidebar ul li a i {

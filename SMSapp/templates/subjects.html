@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block content %}
-<div class="p-4 bg-gray-50">
+<div class="p-4">
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-semibold text-gray-800">Subjects</h2>
         <button type="button" 
@@ -11,6 +11,50 @@
             <i class="fas fa-plus"></i>
             <span>Add Subject</span>
         </button>
+    </div>
+
+    <!-- Subject Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mx-4">
+        {% for subject in subjects %}
+        <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden cursor-pointer"
+             onclick="window.location.href='{% url 'subject_info' subject.subject_code %}'">
+            <!-- Card Header -->
+            <div class="h-24 bg-green-400 p-4 relative">
+                <h3 class="text-xl font-bold text-white">{{ subject.subject_code }}</h3>
+                <p class="text-blue-100 text-sm mt-1">{{ subject.subject_title }}</p>
+                <!-- Action Buttons -->
+                <div class="absolute top-4 right-4 flex gap-2">
+                    <button onclick="event.stopPropagation(); editSubject('{{ subject.subject_code }}')" 
+                            class="text-blue-500 hover:text-blue-400 transition-colors">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); deleteSubject('{{ subject.subject_code }}')" 
+                            class="text-red-500 hover:text-red-400 transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Card Body -->
+            <div class="p-4">
+                <div class="flex items-center gap-2 text-gray-600 mb-2">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>{{ subject.course.course_abv }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-gray-600 mb-2">
+                    <i class="fas fa-users"></i>
+                    <span>Year {{ subject.year_level }} - Section {{ subject.section }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-gray-600">
+                    <i class="fas fa-calendar"></i>
+                    <span>
+                        {% if subject.semester == 1 %}1st Semester
+                        {% elif subject.semester == 2 %}2nd Semester
+                        {% else %}Summer{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
 
     <!-- Modified Modal -->
@@ -66,43 +110,6 @@
                     </form>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Subject List -->
-    <div class="mt-8">
-        <div class="bg-white rounded-lg shadow">
-            <table class="min-w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year Level</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Section</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    {% for subject in subjects %}
-                    <tr data-subject-code="{{ subject.subject_code }}" class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='{% url 'subject_info' subject.subject_code %}'">
-                        <td class="px-6 py-4">{{ subject.subject_code }}</td>
-                        <td class="px-6 py-4">{{ subject.subject_title }}</td>
-                        <td class="px-6 py-4">{{ subject.course.course_abv }}</td>
-                        <td class="px-6 py-4">{{ subject.year_level }}</td>
-                        <td class="px-6 py-4">{{ subject.section }}</td>
-                        <td class="px-6 py-4">
-                            <button onclick="event.stopPropagation(); editSubject('{{ subject.subject_code }}')" class="text-blue-600 hover:text-blue-900 mr-3">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="event.stopPropagation(); deleteSubject('{{ subject.subject_code }}')" class="text-red-600 hover:text-red-900">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
         </div>
     </div>
 
@@ -174,6 +181,18 @@
 .form-label {
     color: #374151;
     font-weight: 500;
+}
+
+/* Add these new styles */
+.card-hover-effect:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
+}
+
+@media (max-width: 640px) {
+    .grid {
+        grid-template-columns: repeat(1, 1fr);
+    }
 }
 </style>
 

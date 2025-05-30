@@ -13,7 +13,6 @@
         .sidebar {
             width: 4.5rem;
             transition: width 0.3s ease;
-            background: #f9fafb;
             box-shadow: 2px 0 8px 0 rgba(0,0,0,0.06);
             z-index: 30;
             position: relative;
@@ -90,63 +89,52 @@
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-100">
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside class="sidebar flex flex-col h-full" id="sidebar">
+        <aside class="sidebar bg-green-500 flex flex-col h-full text-white" id="sidebar">
             <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
-                <span class="text-xl font-bold text-gray-800 logo-text">SMS</span>
-                <button class="text-gray-500 hover:text-gray-700 flex items-center justify-center h-8 w-8" id="toggleSidebar" aria-label="Toggle sidebar">
-                    <i class="fas fa-chevron-left transition-transform duration-300"></i>
+                <span class="text-xl font-bold logo-text">SMS</span>
+                <button class="hover:text-green-700 flex items-center justify-center h-8 w-8" id="toggleSidebar" aria-label="Toggle sidebar">
+                    <i class="fas fa-chevron-right transition-transform duration-300"></i>
                 </button>
             </div>
             <nav class="flex-1 p-2 flex flex-col gap-2">
-                <a href="/" class="nav-link">
+                <a href="/" class="nav-link hover:bg-green-200 hover:text-green-700 {% if request.path == '/' %}bg-green-200 text-green-700{% endif %}">
                     <div class="nav-icon">
                         <i class="fas fa-home text-lg"></i>
                     </div>
-                    <span class="nav-text ml-3">Home</span>
+                    <span class="nav-text font-bold ml-3">Home</span>
                 </a>
-                <a href="{% url 'students' %}" class="nav-link hover:bg-gray-100">
+                <a href="{% url 'students' %}" class="nav-link hover:bg-green-200 hover:text-green-700 {% if request.path == '/students/' %}bg-green-200 text-green-700{% endif %}">
                     <div class="nav-icon">
                         <i class="fas fa-user-graduate text-lg"></i>
                     </div>
-                    <span class="nav-text ml-2">Students</span>
+                    <span class="nav-text font-bold ml-2">Students</span>
                 </a>
-                <a href="{% url 'subjects' %}" class="nav-link hover:bg-gray-100">
+                <a href="{% url 'subjects' %}" class="nav-link hover:bg-green-200 hover:text-green-700 {% if request.path == '/subjects/' %}bg-green-200 text-green-700{% endif %}">
                     <div class="nav-icon">
                         <i class="fas fa-chalkboard-teacher text-lg"></i>
                     </div>
-                    <span class="nav-text ml-2">Subjects</span>
+                    <span class="nav-text font-bold ml-2">Subjects</span>
                 </a>
-                <a href="{% url 'courses' %}" class="nav-link hover:bg-gray-100">
+                <a href="{% url 'courses' %}" class="nav-link hover:bg-green-200 hover:text-green-700 {% if request.path == '/courses/' %}bg-green-200 text-green-700{% endif %}">
                     <div class="nav-icon">
                         <i class="fas fa-scroll text-lg"></i>
                     </div>
-                    <span class="nav-text ml-2">Courses</span>
+                    <span class="nav-text font-bold ml-2">Courses</span>
                 </a>
-                <a href="#" class="nav-link hover:bg-gray-100">
+                <a href="#" class="nav-link hover:bg-green-200 hover:text-green-700">
                     <div class="nav-icon">
                         <i class="fas fa-cog text-lg"></i>
                     </div>
-                    <span class="nav-text ml-2">Settings</span>
+                    <span class="nav-text font-bold ml-2">Settings</span>
                 </a>
             </nav>
         </aside>
 
         <!-- Main Content -->
         <div class="flex-1 flex flex-col">
-            <!-- Top Navigation -->
-            <header class="bg-white shadow-sm">
-                <div class="flex items-center justify-between px-4 py-3">
-                    <div class="flex items-center">
-                        <button class="md:hidden text-gray-500 hover:text-gray-700 mr-4" id="mobileToggle">
-                            <i class="fas fa-bars"></i>
-                        </button>
-                        <h1 class="text-xl font-semibold text-gray-800">Student Management System</h1>
-                    </div>
-                </div>
-            </header>
 
             <!-- Page Content -->
             <main class="flex-1 overflow-x-hidden overflow-y-auto">
@@ -171,8 +159,8 @@
             const savedState = localStorage.getItem('sidebarState') || 'docked';
             if (savedState === 'expanded') {
                 sidebar.classList.add('expanded');
-                icon.classList.remove('fa-chevron-left');
-                icon.classList.add('fa-chevron-right');
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-left');
             }
 
             toggle.addEventListener('click', function(e) {
@@ -181,12 +169,12 @@
                 
                 // Update icon
                 if (sidebar.classList.contains('expanded')) {
-                    icon.classList.remove('fa-chevron-left');
-                    icon.classList.add('fa-chevron-right');
-                    localStorage.setItem('sidebarState', 'expanded');
-                } else {
                     icon.classList.remove('fa-chevron-right');
                     icon.classList.add('fa-chevron-left');
+                    localStorage.setItem('sidebarState', 'expanded');
+                } else {
+                    icon.classList.remove('fa-chevron-left');
+                    icon.classList.add('fa-chevron-right');
                     localStorage.setItem('sidebarState', 'docked');
                 }
             });
