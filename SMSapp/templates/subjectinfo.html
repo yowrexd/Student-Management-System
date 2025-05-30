@@ -111,7 +111,12 @@
                 <tbody class="divide-y divide-gray-100">
                     {% for activity in activities %}
                     <tr class="activity-row" data-type="{{ activity.activity_type }}">
-                        <td class="px-6 py-4">{{ activity.activity_name }}</td>
+                        <td class="px-6 py-4">
+                            <a href="{% url 'grades' activity.activity_id %}" 
+                               class="text-blue-600 hover:text-blue-800">
+                                {{ activity.activity_name }}
+                            </a>
+                        </td>
                         <td class="px-6 py-4">{{ activity.activity_type }}</td>
                         <td class="px-6 py-4">{{ activity.total_items }}</td>
                         <td class="px-6 py-4">{{ activity.date_assigned|date:"M d, Y" }}</td>

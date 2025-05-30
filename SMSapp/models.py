@@ -108,7 +108,7 @@ class Grade(models.Model):
     grade_id = models.AutoField(primary_key=True)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
-    student_grade = models.DecimalField(max_digits=5, decimal_places=2)
+    student_grade = models.CharField(max_length=50, default='N/A')
 
     def __str__(self):
         return f"{self.student} - {self.activity}: {self.student_grade}"

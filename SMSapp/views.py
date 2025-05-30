@@ -3,13 +3,16 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.http import JsonResponse
-from .models import Subject, Activity, StudentSubjectEnrollment, Course, Student
+from django.db import models  # Add this import
+from .models import Subject, Activity, StudentSubjectEnrollment, Course, Student, Grade
 from .serializers import (
     SubjectSerializer, ActivitySerializer, 
-    StudentSubjectEnrollmentSerializer, CourseSerializer, StudentSerializer
+    StudentSubjectEnrollmentSerializer, CourseSerializer, StudentSerializer, GradeSerializer
 )
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 
 def index(request):
     return render(request, 'index.html')
@@ -518,3 +521,58 @@ def students(request):
     students = Student.objects.all().select_related('course')
     courses = Course.objects.all()
     return render(request, 'students.html', {'students': students, 'courses': courses})
+
+def grades(request, activity_id):
+    activity = Activity.objects.select_related('subject').get(activity_id=activity_id)
+    enrollments = StudentSubjectEnrollment.objects.filter(
+        subject=activity.subject
+    ).select_related('student').annotate(
+        grade=models.Subquery(
+            Grade.objects.filter(
+                student=models.OuterRef('student'),
+                activity=activity
+            ).values('student_grade')[:1]
+        )
+    ).order_by('student__last_name', 'student__first_name')  # Order by last name, then first name
+
+    context = {
+        'activity': activity,
+        'enrollments': enrollments,
+    }
+    return render(request, 'grades.html', context)
+
+class GradeViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
+    queryset = Grade.objects.all()
+    serializer_class = GradeSerializer
+
+    @action(detail=False, methods=['post'])
+    def save_grades(self, request):
+        try:
+            activity_id = request.data.get('activity_id')
+            grades_data = request.data.get('grades', [])
+
+            # Validate activity exists
+            activity = Activity.objects.get(activity_id=activity_id)
+            
+            for grade_item in grades_data:
+                student_id = grade_item['student_id']
+                grade_value = grade_item['grade']
+                
+                Grade.objects.update_or_create(
+                    student_id=student_id,
+                    activity_id=activity_id,
+                    defaults={'student_grade': grade_value}
+                )
+
+            return JsonResponse({'status': 'success'})
+        except Activity.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Activity not found'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)

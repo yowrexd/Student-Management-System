@@ -8,6 +8,7 @@ router.register(r'activities', views.ActivityViewSet, basename='api-activities')
 router.register(r'enrollments', views.EnrollmentViewSet, basename='api-enrollments')
 router.register(r'courses', views.CourseViewSet, basename='api-courses')
 router.register(r'students', views.StudentViewSet, basename='api-students')
+router.register(r'grades', views.GradeViewSet, basename='api-grades')
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -17,4 +18,5 @@ urlpatterns = [
     path('subjects/<str:subject_code>/', views.subject_info, name='subject_info'),
     path('students/', views.students, name='students'),
     path('courses/', views.courses, name='courses'),
+    path('activities/<int:activity_id>/grades/', views.grades, name='grades'),
 ]
