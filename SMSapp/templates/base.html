@@ -137,14 +137,14 @@
     <div class="flex h-screen">
         <!-- Sidebar -->
         <aside class="sidebar flex flex-col h-full fixed" id="sidebar">
-            <div class="sidebar-header">
-                <button class="menu-button" id="toggleSidebar" aria-label="Menu">
-                    <i class="fas fa-bars text-[20px] text-[#5f6368]"></i>
-                </button>
+            <div class="sidebar-header flex items-center justify-between">
                 <div class="logo-container">
                     <img src="{% static 'images/image.png' %}" alt="Classroom" class="logo-image">
                     <span class="logo-text">CvSU</span>
                 </div>
+                <button class="menu-button ml-1" id="toggleSidebar" aria-label="Menu">
+                    <i class="fas fa-bars text-[20px] text-[#5f6368]"></i>
+                </button>
             </div>
             <nav class="flex-1 py-3">
                 <a href="/" class="nav-link flex items-center {% if request.path == '/' %}active{% endif %}">
@@ -171,11 +171,12 @@
                     </div>
                     <span class="nav-text">Courses</span>
                 </a>
+                <Hr class="my-3">
                 <a href="#" class="nav-link flex items-center">
                     <div class="nav-icon">
-                        <i class="fas fa-cog"></i>
+                        <i class="fas fa-archive"></i>
                     </div>
-                    <span class="nav-text">Settings</span>
+                    <span class="nav-text">Archived Subjects</span>
                 </a>
             </nav>
         </aside>

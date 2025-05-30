@@ -109,13 +109,20 @@ class SubjectViewSet(viewsets.ModelViewSet):
                 'status': 'error',
                 'message': f"Server error: {str(e)}"
             }, status=500)
-
+            
     def update(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            data = request.data.copy()
+            
+            # Ensure numeric fields are integers
+            for field in ['year_level', 'semester']:
+                if field in data:
+                    data[field] = int(data[field])
+
+            serializer = self.get_serializer(instance, data=data, partial=True)
             if serializer.is_valid():
-                self.perform_update(serializer)
+                serializer.save()
                 return JsonResponse({
                     'status': 'success',
                     'message': 'Subject updated successfully',
@@ -130,12 +137,11 @@ class SubjectViewSet(viewsets.ModelViewSet):
                 'status': 'error',
                 'message': str(e)
             }, status=400)
-
+    
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            instance.archive = True  # Soft delete
-            instance.save()
+            instance.delete()  # Perform actual deletion
             return JsonResponse({
                 'status': 'success',
                 'message': 'Subject deleted successfully'
