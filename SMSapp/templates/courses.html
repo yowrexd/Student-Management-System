@@ -2,63 +2,107 @@
 {% load static %}
 
 {% block content %}
-<div class="p-6 min-h-screen">
-    <!-- Header Section with updated styling -->
-    <div class="flex justify-between items-center mb-8">
-        <div>
-            <h2 class="text-3xl font-bold text-[#006837]">Courses</h2>
-            <p class="text-gray-600 mt-1">Manage your academic courses</p>
+<div class="p-6 min-h-screen bg-gradient-to-br from-gray-50 to-white">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-3xl font-bold text-[#006837]">Courses</h2>
+                <p class="text-gray-600 mt-1 flex items-center gap-2">
+                    <span>Manage your academic courses</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {{ courses|length }} total courses
+                    </span>
+                </p>
+            </div>
+            <button type="button" 
+                    class="group px-5 py-2.5 bg-[#006837] hover:bg-[#005a30] text-white rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-lg hover:shadow-[#006837]/10"
+                    onclick="openModal()">
+                <i class="fas fa-plus text-sm"></i>
+                <span class="font-medium">Add Course</span>
+            </button>
         </div>
-        <button type="button" 
-                class="group px-6 py-3 bg-[#006837] hover:bg-[#2d8653] text-white rounded-xl transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-xl"
-                onclick="openModal()">
-            <i class="fas fa-plus-circle text-lg"></i>
-            <span class="font-medium">Add Course</span>
-        </button>
+
+        <!-- Enhanced Search Section -->
+        <div class="relative max-w-2xl mx-auto">
+            <div class="relative group">
+                <input type="text" 
+                       id="courseSearch" 
+                       placeholder="Search courses..." 
+                       class="w-full px-5 py-4 pl-12 pr-12 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-200 focus:border-[#006837] focus:ring-2 focus:ring-[#006837]/10 transition-all placeholder-gray-400 shadow-sm"
+                       oninput="filterCourses(this.value)">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#006837] transition-colors"></i>
+                <button type="button" 
+                        id="clearSearch" 
+                        class="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                        onclick="clearSearch()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <!-- Search Results Info -->
+            <div id="searchInfo" class="absolute -bottom-8 left-0 text-sm text-gray-500 flex items-center gap-2 opacity-0 transition-opacity duration-200">
+                <span class="flex items-center gap-1.5">
+                    <i class="fas fa-filter text-xs"></i>
+                    <span id="resultsCount"></span>
+                </span>
+            </div>
+        </div>
     </div>
 
-    <!-- Course Grid with improved cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
+    <!-- Course Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
         {% for course in courses %}
-        <div class="group bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 border border-gray-100 hover:shadow-[0_20px_35px_-10px_rgba(0,104,55,0.1)]">
+        <div class="course-card bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300">
             <div class="p-6 relative">
-                <!-- Decorative Elements -->
-                <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#006837]/5 to-transparent rounded-bl-full"></div>
-                <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#FFB81C]/5 to-transparent rounded-tr-full"></div>
-
                 <!-- Course Header -->
-                <div class="flex items-start justify-between mb-6 relative z-10">
+                <div class="flex items-center justify-between mb-5">
                     <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#006837] to-[#2d8653] flex items-center justify-center text-white font-bold shadow-lg">
+                        <div class="w-14 h-14 rounded-lg bg-gradient-to-br from-[#006837] to-[#005a30] flex items-center justify-center text-white font-semibold shadow-sm">
                             {{ course.course_abv|slice:":2" }}
                         </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">{{ course.course_abv }}</h3>
-                            <p class="text-sm text-gray-500">Course Code</p>
+                        <div class="space-y-1">
+                            <h3 class="text-lg font-bold text-gray-800 course-code">{{ course.course_abv }}</h3>
+                            <span class="inline-block px-2.5 py-1 bg-[#006837]/5 text-[#006837] text-xs font-medium rounded">
+                                Course Code
+                            </span>
                         </div>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="flex gap-2">
-                        <button onclick="editCourse('{{ course.course_abv }}')" 
-                                class="p-2 text-gray-600 hover:text-[#006837] hover:bg-green-50 rounded-xl transition-colors">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="deleteCourse('{{ course.course_abv }}')" 
-                                class="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-                            <i class="fas fa-trash"></i>
-                        </button>
                     </div>
                 </div>
 
-                <!-- Course Content -->
-                <div class="mt-4 relative z-10">
-                    <div class="p-4 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-100 group-hover:border-[#006837]/20 transition-all duration-300">
-                        <p class="text-sm font-medium text-[#006837] mb-2">Course Name</p>
-                        <p class="text-gray-700">{{ course.course_name }}</p>
+                <!-- Course Name -->
+                <div class="mb-4">
+                    <p class="text-sm font-medium text-gray-500 mb-2">Course Name</p>
+                    <div class="p-3.5 rounded-lg bg-gray-50 border border-gray-100">
+                        <p class="text-sm text-gray-700 course-name">{{ course.course_name }}</p>
                     </div>
                 </div>
+
+                <!-- Action Buttons - Now in footer -->
+                <div class="flex justify-end gap-2 pt-4 border-t border-gray-100">
+                    <button onclick="editCourse('{{ course.course_abv }}')" 
+                            class="inline-flex items-center px-3 py-2 text-sm font-medium text-[#006837] hover:bg-[#006837]/5 rounded-md transition-colors">
+                        <i class="fas fa-edit mr-2 text-xs"></i>
+                        Edit
+                    </button>
+                    <button onclick="deleteCourse('{{ course.course_abv }}')" 
+                            class="inline-flex items-center px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                        <i class="fas fa-trash mr-2 text-xs"></i>
+                        Delete
+                    </button>
+                </div>
             </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full flex flex-col items-center justify-center p-12 rounded-lg border-2 border-dashed border-gray-200">
+            <div class="w-16 h-16 mb-4 rounded-full bg-[#006837]/5 flex items-center justify-center">
+                <i class="fas fa-graduation-cap text-xl text-[#006837]"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">No Courses Found</h3>
+            <p class="text-gray-500 text-sm">Start by adding your first course</p>
+            <button onclick="openModal()" 
+                    class="mt-4 px-4 py-2 bg-[#006837] text-white rounded-lg hover:bg-[#005a30] transition-colors">
+                Add Course
+            </button>
         </div>
         {% endfor %}
     </div>
@@ -177,29 +221,53 @@
 </div>
 
 <style>
-/* Add these styles in the head or style section */
+.modal {
+    backdrop-filter: blur(8px);
+}
+
+.modal-content {
+    @apply shadow-xl border-0 rounded-xl;
+}
+
 .modal input,
 .modal select {
-    @apply border border-gray-300;
+    @apply bg-gray-50/50 border-gray-200;
     border-width: 1px !important;
 }
 
 .modal input:focus,
 .modal select:focus {
-    @apply ring-2 ring-[#006837]/20 border-[#006837];
+    @apply ring-1 ring-[#006837]/20 border-[#006837] bg-white;
 }
 
-/* Fix input field styling */
-.modal .form-field input,
-.modal .form-field select {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-300 text-gray-700 bg-white;
-    border: 1px solid #e5e7eb !important;
+.modal .form-field input {
+    @apply px-4 py-3 rounded-lg bg-gray-50 border-gray-200 focus:border-[#006837] focus:ring-1 focus:ring-[#006837]/20;
 }
 
-/* Add focus state */
-.modal .form-field input:focus,
-.modal .form-field select:focus {
-    @apply outline-none ring-2 ring-[#006837]/20 border-[#006837];
+#searchInfo.show {
+    opacity: 1;
+}
+
+.course-card {
+    animation: fadeIn 0.4s ease-out;
+    will-change: transform;
+}
+
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.search-highlight {
+    background-color: rgba(0, 104, 55, 0.1);
+    padding: 0 2px;
+    border-radius: 2px;
 }
 </style>
 
@@ -290,7 +358,7 @@ function deleteCourse(courseAbv) {
             }
         })
         .then(response => response.json())
-        .then(data => {
+        .then data => {
             if (data.status === 'success') {
                 showToast('Course deleted successfully!');
                 setTimeout(() => location.reload(), 1500);
@@ -318,6 +386,59 @@ function showToast(message, type = 'success') {
     
     toast.classList.remove('translate-x-full');
     setTimeout(() => toast.classList.add('translate-x-full'), 3000);
+}
+
+function filterCourses(searchValue) {
+    searchValue = searchValue.toLowerCase().trim();
+    const courses = document.getElementsByClassName('course-card');
+    const clearButton = document.getElementById('clearSearch');
+    const searchInfo = document.getElementById('searchInfo');
+    const resultsCount = document.getElementById('resultsCount');
+    let matchCount = 0;
+    
+    clearButton.style.opacity = searchValue ? '1' : '0';
+    
+    Array.from(courses).forEach(course => {
+        const code = course.querySelector('.course-code').textContent.toLowerCase();
+        const name = course.querySelector('.course-name').textContent.toLowerCase();
+        
+        if (code.includes(searchValue) || name.includes(searchValue)) {
+            course.style.display = '';
+            course.style.animation = 'fadeIn 0.4s ease-out forwards';
+            matchCount++;
+            
+            if (searchValue) {
+                highlightText(course, searchValue);
+            } else {
+                removeHighlight(course);
+            }
+        } else {
+            course.style.display = 'none';
+        }
+    });
+    
+    if (searchValue) {
+        searchInfo.classList.add('show');
+        resultsCount.textContent = `${matchCount} ${matchCount === 1 ? 'course' : 'courses'} found`;
+    } else {
+        searchInfo.classList.remove('show');
+    }
+}
+
+function highlightText(course, searchValue) {
+    const elements = course.querySelectorAll('.course-code, .course-name');
+    elements.forEach(element => {
+        const text = element.textContent;
+        const regex = new RegExp(`(${searchValue})`, 'gi');
+        element.innerHTML = text.replace(regex, '<span class="search-highlight">$1</span>');
+    });
+}
+
+function removeHighlight(course) {
+    const elements = course.querySelectorAll('.course-code, .course-name');
+    elements.forEach(element => {
+        element.innerHTML = element.textContent;
+    });
 }
 </script>
 {% endblock %}
