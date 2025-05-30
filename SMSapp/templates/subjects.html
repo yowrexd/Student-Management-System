@@ -19,11 +19,29 @@
     <!-- Subject Cards Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {% for subject in subjects %}
-        <div class="group bg-white rounded-2xl overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_35px_-10px_rgba(0,104,55,0.1)] border border-gray-100">
-            <a href="{% url 'subject_info' subject.subject_code %}" class="block">
-                <div class="relative p-6 bg-gradient-to-br from-gray-50 to-white">
-                    <!-- Subject Badge -->
-                    <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mb-3
+        <div class="relative group bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 border border-gray-100 hover:shadow-[0_20px_35px_-10px_rgba(0,104,55,0.1)]">
+            <!-- Action Buttons - Positioned absolutely -->
+            <div class="absolute top-6 right-6 flex gap-2 z-20">
+                <button onclick="event.preventDefault(); editSubject('{{ subject.subject_code }}')" 
+                        class="p-2 text-gray-600 hover:text-[#006837] hover:bg-green-50 rounded-xl transition-colors">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="event.preventDefault(); deleteSubject('{{ subject.subject_code }}')" 
+                        class="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            
+            <!-- Clickable Link Wrapper -->
+            <a href="{% url 'subject_info' subject.subject_code %}" class="block p-6 relative">
+                <!-- Decorative Elements -->
+                <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#006837]/5 to-transparent rounded-bl-full"></div>
+                <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#FFB81C]/5 to-transparent rounded-tr-full"></div>
+
+                <!-- Content -->
+                <div class="relative z-10">
+                    <!-- Semester Badge -->
+                    <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mb-4
                         {% if subject.semester == 1 %}bg-blue-50 text-blue-600
                         {% elif subject.semester == 2 %}bg-purple-50 text-purple-600
                         {% else %}bg-orange-50 text-orange-600{% endif %}">
@@ -31,29 +49,17 @@
                         {% elif subject.semester == 2 %}2nd Semester
                         {% else %}Summer{% endif %}
                     </div>
-                    
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-800 mb-1">{{ subject.subject_code }}</h3>
-                            <p class="text-gray-600 font-medium">{{ subject.subject_title }}</p>
-                        </div>
-                        
-                        <!-- Action buttons with new styling -->
-                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                            <button onclick="event.preventDefault(); event.stopPropagation(); editSubject('{{ subject.subject_code }}')" 
-                                    class="p-2 text-gray-600 hover:text-[#006837] hover:bg-green-50 rounded-xl transition-all duration-200">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="event.preventDefault(); event.stopPropagation(); deleteSubject('{{ subject.subject_code }}')" 
-                                    class="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+
+                    <!-- Subject Header -->
+                    <div class="mb-4 pr-20"> <!-- Added right padding to prevent overlap with buttons -->
+                        <h3 class="text-xl font-bold text-gray-800 group-hover:text-[#006837] transition-colors">{{ subject.subject_code }}</h3>
+                        <p class="text-gray-600 font-medium mt-1">{{ subject.subject_title }}</p>
                     </div>
 
                     <!-- Info Grid -->
-                    <div class="grid grid-cols-2 gap-4 mt-6">
-                        <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 transition-colors group-hover:bg-green-50/50">
+                    <div class="space-y-3">
+                        <!-- Course Info -->
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 group-hover:bg-green-50/50 transition-colors">
                             <div class="w-8 h-8 rounded-lg bg-[#006837]/10 flex items-center justify-center text-[#006837]">
                                 <i class="fas fa-graduation-cap"></i>
                             </div>
@@ -62,8 +68,9 @@
                                 <p class="font-medium text-gray-700">{{ subject.course.course_abv }}</p>
                             </div>
                         </div>
-                        
-                        <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 transition-colors group-hover:bg-green-50/50">
+
+                        <!-- Section Info -->
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 group-hover:bg-green-50/50 transition-colors">
                             <div class="w-8 h-8 rounded-lg bg-[#006837]/10 flex items-center justify-center text-[#006837]">
                                 <i class="fas fa-users"></i>
                             </div>
@@ -73,10 +80,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Decorative Elements -->
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#006837]/5 to-transparent rounded-bl-full"></div>
-                    <div class="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-[#FFB81C]/5 to-transparent rounded-tr-full"></div>
                 </div>
             </a>
         </div>
@@ -182,60 +185,95 @@
 </div>
 
 <!-- Edit Subject Modal -->
-<div class="modal fade" id="editSubjectModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="editSubjectModal" data-bs-backdrop="static" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 600px; width: 95%;">
-        <div class="modal-content border-0 shadow-lg rounded-lg">
-            <div class="modal-header">
-                <h3 class="modal-title">Edit Subject</h3>
-                <button type="button" class="text-gray-400 hover:text-gray-500" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i>
-                </button>
+        <div class="modal-content bg-white rounded-2xl shadow-2xl border-0">
+            <div class="p-6 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-bold text-gray-800">Edit Subject</h3>
+                    <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors" data-bs-dismiss="modal">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
             </div>
-            <div class="modal-body p-8">
+            <div class="p-6">
                 <form id="editSubjectForm" method="POST">
                     {% csrf_token %}
-                    <div class="grid gap-6 mb-8">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <input type="text" class="w-full p-2 border rounded" id="edit_subject_code" name="subject_code" placeholder="Subject Code" required readonly>
-                            </div>
-                            <div>
-                                <input type="text" class="w-full p-2 border rounded" id="edit_subject_title" name="subject_title" placeholder="Subject Title" required>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <select class="w-full p-2 border rounded" id="edit_course" name="course">
-                                    <option value="" selected>Select Course</option>
-                                    {% for course in courses %}
-                                        <option value="{{ course.pk }}">{{ course.course_abv }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div>
-                                <input type="text" class="w-full p-2 border rounded" id="edit_school_year" name="school_year" placeholder="School Year" required>
+                    <div class="space-y-6">
+                        <!-- Subject Information -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Subject Information</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Subject Code</label>
+                                    <input type="text" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                           id="edit_subject_code" name="subject_code" required readonly>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Subject Title</label>
+                                    <input type="text" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                           id="edit_subject_title" name="subject_title" required>
+                                </div>
                             </div>
                         </div>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div>
-                                <select class="w-full p-2 border rounded" id="edit_semester" name="semester" required>
-                                    <option value="" disabled selected>Semester</option>
-                                    <option value="1">1st Semester</option>
-                                    <option value="2">2nd Semester</option>
-                                    <option value="3">Summer</option>
-                                </select>
+
+                        <!-- Course and School Year -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Course Details</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Course</label>
+                                    <select class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                            id="edit_course" name="course">
+                                        <option value="" selected>Select Course</option>
+                                        {% for course in courses %}
+                                            <option value="{{ course.pk }}">{{ course.course_abv }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">School Year</label>
+                                    <input type="text" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                           id="edit_school_year" name="school_year" required>
+                                </div>
                             </div>
-                            <div>
-                                <input type="number" class="w-full p-2 border rounded" id="edit_year_level" name="year_level" placeholder="Year Level" min="1" required>
-                            </div>
-                            <div>
-                                <input type="text" class="w-full p-2 border rounded" id="edit_section" name="section" placeholder="Section" required>
+                        </div>
+
+                        <!-- Section Details -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Section Details</h4>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+                                    <select class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                            id="edit_semester" name="semester" required>
+                                        <option value="" disabled selected>Select</option>
+                                        <option value="1">1st Semester</option>
+                                        <option value="2">2nd Semester</option>
+                                        <option value="3">Summer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
+                                    <input type="number" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                           id="edit_year_level" name="year_level" min="1" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                                    <input type="text" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                           id="edit_section" name="section" required>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-3">
-                        <button type="button" class="px-8 py-3 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="px-8 py-3 bg-blue-500 text-white rounded hover:bg-blue-600">Update</button>
+
+                    <div class="flex justify-end items-center gap-3 mt-8 pt-6 border-t border-gray-100">
+                        <button type="button" class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#006837] text-white hover:bg-[#2d8653] transition-colors">
+                            Update Subject
+                        </button>
                     </div>
                 </form>
             </div>
@@ -274,6 +312,18 @@
 .card-hover-effect:hover {
     transform: translateY(-2px);
     transition: transform 0.2s ease;
+}
+
+.relative {
+    position: relative;
+}
+
+.z-10 {
+    z-index: 10;
+}
+
+.cursor-pointer {
+    cursor: pointer;
 }
 
 @media (max-width: 640px) {
@@ -361,6 +411,7 @@ document.getElementById('subjectForm').addEventListener('submit', function(e) {
     submitForm('subjectForm', 'addSubjectModal');
 });
 
+// Add these functions back to your script section
 function editSubject(subjectCode) {
     fetch(`/api/subjects/${subjectCode}/`, {
         headers: {
@@ -404,9 +455,7 @@ function deleteSubject(subjectCode) {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                const row = document.querySelector(`tr[data-subject-code="${subjectCode}"]`);
-                if (row) row.remove();
-                alert(data.message);
+                window.location.reload();
             } else {
                 throw new Error(data.message || 'Failed to delete subject');
             }
