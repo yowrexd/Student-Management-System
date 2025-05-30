@@ -43,23 +43,20 @@
         <!-- Table Section -->
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50 border-b border-gray-100">
+                <thead class="bg-green-700 border-b border-gray-100">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year & Section</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider">Student ID</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider">Course</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider">Year & Section</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     {% for student in students %}
-                    <tr data-student-id="{{ student.student_id }}" class="hover:bg-gray-50/50 transition-colors cursor-pointer" onclick="window.location.href='{% url 'student_info' student.student_id %}'">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="font-medium text-gray-900">{{ student.student_id }}</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
+                    <tr data-student-id="{{ student.student_id }}" class="hover:bg-green-100 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="window.location.href='{% url 'student_info' student.student_id %}'">
+                            <div class="flex items-center justify-start ml-4">
                                 <div class="h-8 w-8 rounded-full bg-[#006837] flex items-center justify-center text-white font-medium text-sm">
                                     {{ student.first_name|slice:":1" }}{{ student.last_name|slice:":1" }}
                                 </div>
@@ -69,16 +66,19 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="font-medium text-gray-900">{{ student.student_id }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-200 text-green-800">
                                 {{ student.course.course_abv }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Year {{ student.year_level }} - {{ student.section }}
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                            {{ student.year_level }} - {{ student.section }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center justify-center gap-2">
                                 <button onclick="editStudent('{{ student.student_id }}')" 
                                         class="p-2 text-[#006837] hover:bg-green-50 rounded-lg transition-colors">
                                     <i class="fas fa-edit"></i>
@@ -127,14 +127,6 @@
                                 <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Student Information</h4>
                                 <div class="grid grid-cols-3 gap-4">
                                     <div class="form-field">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                                        <input type="text" 
-                                               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
-                                               id="last_name" 
-                                               name="last_name" 
-                                               required>
-                                    </div>
-                                    <div class="form-field">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
                                         <input type="text" 
                                                class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
@@ -148,6 +140,14 @@
                                                class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
                                                id="middle_name" 
                                                name="middle_name">
+                                    </div>
+                                    <div class="form-field">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                                        <input type="text" 
+                                               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
+                                               id="last_name" 
+                                               name="last_name" 
+                                               required>
                                     </div>
                                 </div>
                             </div>
@@ -207,45 +207,104 @@
     <!-- Edit Student Modal -->
     <div class="modal fade" id="editStudentModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 600px; width: 95%;">
-            <div class="modal-content border-0 shadow-lg rounded-lg">
-                <div class="modal-body p-8">
+            <div class="modal-content bg-white rounded-2xl shadow-2xl border-0">
+                <div class="p-6 border-b border-gray-100">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-2xl font-bold text-gray-800">Edit Student</h3>
+                        <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors" data-bs-dismiss="modal">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
                     <form id="editStudentForm" method="POST">
                         {% csrf_token %}
-                        <div class="grid gap-6 mb-8">
+                        <div class="space-y-6">
+                            <!-- Student ID -->
+                            <div class="form-field">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+                                <input type="text" 
+                                       class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
+                                       id="edit_student_id" 
+                                       name="student_id" 
+                                       required>
+                            </div>
+
+                            <!-- Name Fields -->
                             <div>
-                                <input type="text" class="w-full p-2 border rounded" id="edit_student_id" name="student_id" placeholder="Student ID" required>
+                                <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Student Information</h4>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div class="form-field">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                                        <input type="text" 
+                                               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
+                                               id="edit_first_name" 
+                                               name="first_name" 
+                                               required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Middle Name</label>
+                                        <input type="text" 
+                                               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
+                                               id="edit_middle_name" 
+                                               name="middle_name">
+                                    </div>
+                                    <div class="form-field">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                                        <input type="text" 
+                                               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
+                                               id="edit_last_name" 
+                                               name="last_name" 
+                                               required>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="grid grid-cols-3 gap-4">
-                                <div>
-                                    <input type="text" class="w-full p-2 border rounded" id="edit_last_name" name="last_name" placeholder="Last Name" required>
-                                </div>
-                                <div>
-                                    <input type="text" class="w-full p-2 border rounded" id="edit_first_name" name="first_name" placeholder="First Name" required>
-                                </div>
-                                <div>
-                                    <input type="text" class="w-full p-2 border rounded" id="edit_middle_name" name="middle_name" placeholder="Middle Name">
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-3 gap-4">
-                                <div>
-                                    <select class="w-full p-2 border rounded" id="edit_course" name="course" required>
-                                        <option value="" disabled selected>Select Course</option>
-                                        {% for course in courses %}
-                                            <option value="{{ course.course_abv }}">{{ course.course_abv }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div>
-                                    <input type="number" class="w-full p-2 border rounded" id="edit_year_level" name="year_level" placeholder="Year Level" min="1" required>
-                                </div>
-                                <div>
-                                    <input type="text" class="w-full p-2 border rounded" id="edit_section" name="section" placeholder="Section" required>
+
+                            <!-- Course Details -->
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Course Details</h4>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div class="form-field">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Course</label>
+                                        <select class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
+                                                id="edit_course" 
+                                                name="course" 
+                                                required>
+                                            <option value="" disabled selected>Select Course</option>
+                                            {% for course in courses %}
+                                                <option value="{{ course.course_abv }}">{{ course.course_abv }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-field">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
+                                        <input type="number" 
+                                               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
+                                               id="edit_year_level" 
+                                               name="year_level" 
+                                               min="1" 
+                                               required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Section</label>
+                                        <input type="text" 
+                                               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#006837]/20 focus:border-[#006837] transition-all" 
+                                               id="edit_section" 
+                                               name="section" 
+                                               required>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="flex justify-end gap-3">
-                            <button type="button" class="px-8 py-3 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="px-8 py-3 bg-blue-500 text-white rounded hover:bg-blue-600">Update</button>
+
+                        <div class="flex justify-end items-center gap-3 mt-8 pt-6 border-t border-gray-100">
+                            <button type="button" 
+                                    class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors" 
+                                    data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" 
+                                    class="px-6 py-2.5 rounded-xl bg-[#006837] text-white hover:bg-[#2d8653] transition-colors">
+                                Update Student
+                            </button>
                         </div>
                     </form>
                 </div>

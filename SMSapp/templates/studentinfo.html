@@ -31,21 +31,40 @@
     </div>
 
     <!-- Enrolled Subjects -->
-    <div class="grid grid-cols-2 gap-6">
-        {% for enrollment in enrollments %}
-        <a href="{% url 'student_subject_info' student.student_id enrollment.subject.subject_code %}" 
-           class="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition-shadow">
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ enrollment.subject.subject_title }}</h3>
-            <div class="text-gray-600 space-y-1">
-                <p>{{ enrollment.subject.subject_code }}</p>
-                <p>{{ enrollment.subject.get_semester_display }}</p>
-            </div>
-        </a>
-        {% empty %}
-        <div class="col-span-2 bg-white rounded-2xl shadow-sm p-6 text-center text-gray-500">
-            No subjects enrolled
-        </div>
-        {% endfor %}
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-green-700 border-b border-gray-100">
+                <tr>
+                    <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Subject Code</th>
+                    <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Subject Title</th>
+                    <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Semester</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for enrollment in enrollments %}
+                <tr class="hover:bg-green-100 transition-colors cursor-pointer" 
+                    onclick="window.location.href='{% url 'student_subject_info' student.student_id enrollment.subject.subject_code %}'">
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="text-sm font-medium text-gray-900">{{ enrollment.subject.subject_code }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="text-sm text-gray-900">{{ enrollment.subject.subject_title }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-300 text-green-800">
+                            {{ enrollment.subject.get_semester_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="px-6 py-8 text-center text-gray-500">
+                        No subjects enrolled
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

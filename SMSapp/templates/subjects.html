@@ -20,22 +20,33 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {% for subject in subjects %}
         <div class="relative group bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 border border-gray-100 hover:shadow-[0_20px_35px_-10px_rgba(0,104,55,0.1)]">
-            <!-- Action Buttons - Positioned absolutely -->
-            <div class="absolute top-6 right-6 flex gap-2 z-20">
-                <button onclick="event.preventDefault(); editSubject('{{ subject.subject_code }}')" 
-                        class="p-2 text-gray-600 hover:text-[#006837] hover:bg-green-50 rounded-xl transition-colors">
-                    <i class="fas fa-edit"></i>
+            <!-- 3-dots Dropdown Button -->
+            <div class="absolute top-6 right-6 z-50">
+                <button type="button" 
+                        class="p-2 rounded-full hover:bg-gray-100 transition-colors relative" 
+                        onclick="event.preventDefault(); toggleDropdown(this)">
+                    <i class="fas fa-ellipsis-v text-gray-600"></i>
                 </button>
-                <button onclick="event.preventDefault(); deleteSubject('{{ subject.subject_code }}')" 
-                        class="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="dropdown-menu hidden absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-50">
+                    <button onclick="event.stopPropagation(); editSubject('{{ subject.subject_code }}')" 
+                            class="w-full text-left px-4 py-3 hover:bg-green-50 text-gray-700 flex items-center gap-2 rounded-t-xl">
+                        <i class="fas fa-edit text-[#006837]"></i> Edit
+                    </button>
+                    <button onclick="event.stopPropagation(); /* archiveSubject('{{ subject.subject_code }}') */" 
+                            class="w-full text-left px-4 py-3 hover:bg-yellow-50 text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-archive text-yellow-600"></i> Archive
+                    </button>
+                    <button onclick="event.stopPropagation(); deleteSubject('{{ subject.subject_code }}')" 
+                            class="w-full text-left px-4 py-3 hover:bg-red-50 text-red-600 flex items-center gap-2 rounded-b-xl">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
             </div>
             
             <!-- Clickable Link Wrapper -->
             <a href="{% url 'subject_info' subject.subject_code %}" class="block p-6 relative">
                 <!-- Decorative Elements -->
-                <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#006837]/5 to-transparent rounded-bl-full"></div>
+                <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-300 to-transparent rounded-bl-full"></div>
                 <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#FFB81C]/5 to-transparent rounded-tr-full"></div>
 
                 <!-- Content -->
@@ -495,6 +506,32 @@ document.getElementById('editSubjectForm').addEventListener('submit', function(e
         console.error('Error:', error);
         alert(error.message || 'An error occurred while updating the subject');
     });
+});
+
+// Updated dropdown toggle function
+function toggleDropdown(button) {
+    // Close all other dropdowns
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        if (menu !== button.nextElementSibling) {
+            menu.classList.add('hidden');
+        }
+    });
+
+    const menu = button.nextElementSibling;
+    menu.classList.toggle('hidden');
+
+    // Handle outside clicks
+    document.addEventListener('click', function closeMenu(e) {
+        if (!button.contains(e.target) && !menu.contains(e.target)) {
+            menu.classList.add('hidden');
+            document.removeEventListener('click', closeMenu);
+        }
+    });
+}
+
+// Add click handler to prevent closing when clicking inside dropdown
+document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    menu.addEventListener('click', (e) => e.stopPropagation());
 });
 </script>
 {% endblock %}
