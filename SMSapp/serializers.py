@@ -54,10 +54,18 @@ class SubjectSerializer(serializers.ModelSerializer):
     def validate_subject_code(self, value):
         if not value:
             raise serializers.ValidationError("Subject code is required")
-        return value.upper()  # Convert to uppercase
+        return value.upper()  # Convert to uppercase    def validate(self, data):
+        # Check uniqueness for subject code during update
+        if self.instance and 'subject_code' in data:
+            new_code = data['subject_code'].upper()
+            if new_code != self.instance.subject_code:
+                if Subject.objects.filter(subject_code=new_code).exists():
+                    raise serializers.ValidationError({
+                        'subject_code': 'Subject with this code already exists'
+                    })
+            data['subject_code'] = new_code
 
-    def validate(self, data):
-        # Add any cross-field validation here
+        # Validate year level
         if data.get('year_level') and (data['year_level'] < 1 or data['year_level'] > 4):
             raise serializers.ValidationError({"year_level": "Year level must be between 1 and 4"})
         return data
