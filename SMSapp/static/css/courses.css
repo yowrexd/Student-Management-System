@@ -1,0 +1,86 @@
+:root {
+    --cvsu-green: #006837;
+    --cvsu-green-light: #2d8653;
+    --cvsu-gold: #FFB81C;
+}
+
+.course-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, #fff 0%, rgba(0, 104, 55, 0.05) 100%);
+}
+
+.course-card:hover {
+    transform: translateY(-4px);
+}
+
+.modal-content {
+    animation: slideIn 0.3s ease-out;
+    backdrop-filter: blur(12px);
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.98) 100%);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Custom animation for course abbreviation badge */
+@keyframes badgePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.course-badge {
+    animation: badgePulse 2s infinite;
+    background: var(--cvsu-green);
+}
+
+@keyframes badgePulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 104, 55, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(0, 104, 55, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 104, 55, 0); }
+}
+
+.form-input:focus {
+    box-shadow: 0 0 0 3px rgba(0, 104, 55, 0.2);
+    border-color: var(--cvsu-green);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--cvsu-green-light);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--cvsu-green);
+}
+
+/* Form input styling */
+.modal input,
+.modal select {
+    border: 1px solid #e5e7eb !important;
+    background-color: white !important;
+}
+
+.modal input:focus,
+.modal select:focus {
+    border-color: var(--cvsu-green) !important;
+    box-shadow: 0 0 0 3px rgba(0, 104, 55, 0.1) !important;
+}

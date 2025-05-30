@@ -10,175 +10,213 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .sidebar {
-            width: 4.5rem;
-            transition: width 0.3s ease;
-            box-shadow: 2px 0 8px 0 rgba(0,0,0,0.06);
-            z-index: 30;
-            position: relative;
+        :root {
+            --gc-primary: #00563F;     /* CvSU Green */
+            --gc-secondary: #E6F2EE;    /* Light green shade */
+            --gc-text: #333333;         /* Dark gray for text */
+            --gc-border: #CCCCCC;       /* Light gray for borders */
+            --gc-hover: #F5F9F7;        /* Very light green for hover */
+            --sidebar-width: 256px;
+            --sidebar-collapsed-width: 72px;
         }
-        .sidebar.expanded {
-            width: 16rem;
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: white;
+            transition: width 0.3s cubic-bezier(0.4,0,0.2,1);
+            box-shadow: 0 1px 2px 0 rgb(60 64 67 / 30%), 0 1px 3px 1px rgb(60 64 67 / 15%);
+        }
+        .sidebar-header {
+            height: 64px;
+            padding: 8px 16px 8px 8px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--gc-border);
+        }
+        .menu-button {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 4px;
+        }
+        .menu-button:hover {
+            background-color: var(--gc-hover);
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+        }
+        .logo-image {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+        }
+        .logo-text {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            font-size: 22px;
+            color: var(--gc-text);
+            white-space: nowrap;
+            overflow: hidden;
         }
         .nav-link {
+            height: 48px;
+            padding: 0 12px 0 24px;
+            margin: 0 12px;
+            border-radius: 0 25px 25px 0;
             display: flex;
             align-items: center;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            width: 100%;
-            justify-content: center;  /* Center when collapsed */
-        }
-        .sidebar.expanded .nav-link {
-            justify-content: flex-start;  /* Left align when expanded */
+            color: var(--gc-text);
+            transition: background-color .2s;
         }
         .nav-icon {
-            width: 3rem;  /* Fixed width for consistent centering */
-            height: 3rem;
+            width: 24px;
+            height: 24px;
+            margin-right: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;  /* Prevent icon from shrinking */
+            color: #5f6368;
+            flex-shrink: 0;
         }
         .nav-text {
-            opacity: 0;
-            transition: opacity 0.2s;
-            display: none;  /* Hide by default */
-        }
-        .sidebar.expanded .nav-text {
-            opacity: 1;
-            display: block;  /* Show when expanded */
-        }
-        .sidebar .logo-text {
-            display: none;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: .01785714em;
             white-space: nowrap;
+            overflow: hidden;
         }
-        .sidebar.expanded .logo-text {
-            display: block;
+        .nav-link:hover {
+            background-color: var(--gc-hover);
         }
-        .nav-item {
-            display: flex;
-            align-items: center;
+        .nav-link.active {
+            background-color: var(--gc-secondary);
+            color: var(--gc-primary);
+        }
+        .nav-link.active .nav-icon {
+            color: var(--gc-primary);
+        }
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+        .sidebar.collapsed .logo-text,
+        .sidebar.collapsed .nav-text {
+            display: none;
+        }
+        .sidebar.collapsed .nav-link {
+            padding: 0;
+            margin: 0;
             justify-content: center;
-            width: 100%;
         }
-        .sidebar.expanded .nav-item {
-            justify-content: flex-start;
+        .sidebar.collapsed .nav-icon {
+            margin-right: 0;
         }
-        .sidebar-overlay {
-            transition: opacity 0.3s ease;
+        .main-content {
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
+            min-height: 100vh;
+            width: calc(100% - var(--sidebar-width));
+            position: relative;
         }
-        /* Prevent transition flash on load */
-        .sidebar {
-            transition: none !important;
+        .main-content.collapsed {
+            margin-left: var(--sidebar-collapsed-width);
+            width: calc(100% - var(--sidebar-collapsed-width));
         }
-        .sidebar.initialized {
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                height: 100vh;
-                transform: translateX(-100%);
-                width: 16rem;
-            }
-            .sidebar.active {
-                transform: translateX(0);
-            }
+        body {
+            background-color: #f9f9f9;
+            overflow-x: hidden;
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body>
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside class="sidebar bg-green-500 flex flex-col h-full text-white" id="sidebar">
-            <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
-                <span class="text-xl font-bold logo-text">SMS</span>
-                <button class="hover:text-green-700 flex items-center justify-center h-8 w-8" id="toggleSidebar" aria-label="Toggle sidebar">
-                    <i class="fas fa-chevron-right transition-transform duration-300"></i>
+        <aside class="sidebar flex flex-col h-full fixed" id="sidebar">
+            <div class="sidebar-header">
+                <button class="menu-button" id="toggleSidebar" aria-label="Menu">
+                    <i class="fas fa-bars text-[20px] text-[#5f6368]"></i>
                 </button>
+                <div class="logo-container">
+                    <img src="{% static 'images/image.png' %}" alt="Classroom" class="logo-image">
+                    <span class="logo-text">CvSU</span>
+                </div>
             </div>
-            <nav class="flex-1 p-2 flex flex-col gap-2">
-                <a href="/" class="nav-link hover:bg-green-200 hover:text-green-700 {% if request.path == '/' %}bg-green-200 text-green-700{% endif %}">
+            <nav class="flex-1 py-3">
+                <a href="/" class="nav-link flex items-center {% if request.path == '/' %}active{% endif %}">
                     <div class="nav-icon">
-                        <i class="fas fa-home text-lg"></i>
+                        <i class="fas fa-home"></i>
                     </div>
-                    <span class="nav-text font-bold ml-3">Home</span>
+                    <span class="nav-text">Classes</span>
                 </a>
-                <a href="{% url 'students' %}" class="nav-link hover:bg-green-200 hover:text-green-700 {% if request.path == '/students/' %}bg-green-200 text-green-700{% endif %}">
+                <a href="{% url 'students' %}" class="nav-link flex items-center {% if request.path == '/students/' %}active{% endif %}">
                     <div class="nav-icon">
-                        <i class="fas fa-user-graduate text-lg"></i>
+                        <i class="fas fa-user-graduate"></i>
                     </div>
-                    <span class="nav-text font-bold ml-2">Students</span>
+                    <span class="nav-text">Students</span>
                 </a>
-                <a href="{% url 'subjects' %}" class="nav-link hover:bg-green-200 hover:text-green-700 {% if request.path == '/subjects/' %}bg-green-200 text-green-700{% endif %}">
+                <a href="{% url 'subjects' %}" class="nav-link flex items-center {% if request.path == '/subjects/' %}active{% endif %}">
                     <div class="nav-icon">
-                        <i class="fas fa-chalkboard-teacher text-lg"></i>
+                        <i class="fas fa-chalkboard-teacher"></i>
                     </div>
-                    <span class="nav-text font-bold ml-2">Subjects</span>
+                    <span class="nav-text">Subjects</span>
                 </a>
-                <a href="{% url 'courses' %}" class="nav-link hover:bg-green-200 hover:text-green-700 {% if request.path == '/courses/' %}bg-green-200 text-green-700{% endif %}">
+                <a href="{% url 'courses' %}" class="nav-link flex items-center {% if request.path == '/courses/' %}active{% endif %}">
                     <div class="nav-icon">
-                        <i class="fas fa-scroll text-lg"></i>
+                        <i class="fas fa-scroll"></i>
                     </div>
-                    <span class="nav-text font-bold ml-2">Courses</span>
+                    <span class="nav-text">Courses</span>
                 </a>
-                <a href="#" class="nav-link hover:bg-green-200 hover:text-green-700">
+                <a href="#" class="nav-link flex items-center">
                     <div class="nav-icon">
-                        <i class="fas fa-cog text-lg"></i>
+                        <i class="fas fa-cog"></i>
                     </div>
-                    <span class="nav-text font-bold ml-2">Settings</span>
+                    <span class="nav-text">Settings</span>
                 </a>
             </nav>
         </aside>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col">
-
-            <!-- Page Content -->
-            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+        <div class="main-content" id="mainContent">
+            <main class="p-6">
                 {% block content %}
                 {% endblock %}
             </main>
         </div>
     </div>
 
-    <!-- Overlay -->
-    <div class="sidebar-overlay fixed inset-0 bg-black bg-opacity-50 z-20 hidden" id="overlay"></div>
-
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
             const toggle = document.getElementById('toggleSidebar');
-            const icon = toggle.querySelector('i');
-            
-            // Load saved state
-            const savedState = localStorage.getItem('sidebarState') || 'docked';
-            if (savedState === 'expanded') {
-                sidebar.classList.add('expanded');
-                icon.classList.remove('fa-chevron-right');
-                icon.classList.add('fa-chevron-left');
+            let isExpanded = true;
+
+            function toggleSidebar() {
+                isExpanded = !isExpanded;
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('collapsed');
+                
+                // Save state
+                localStorage.setItem('sidebarState', isExpanded ? 'expanded' : 'collapsed');
             }
 
-            toggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                sidebar.classList.toggle('expanded');
-                
-                // Update icon
-                if (sidebar.classList.contains('expanded')) {
-                    icon.classList.remove('fa-chevron-right');
-                    icon.classList.add('fa-chevron-left');
-                    localStorage.setItem('sidebarState', 'expanded');
-                } else {
-                    icon.classList.remove('fa-chevron-left');
-                    icon.classList.add('fa-chevron-right');
-                    localStorage.setItem('sidebarState', 'docked');
-                }
-            });
+            // Load saved state
+            const savedState = localStorage.getItem('sidebarState');
+            if (savedState === 'collapsed') {
+                toggleSidebar();
+            }
+
+            // Toggle button click
+            toggle.addEventListener('click', toggleSidebar);
         });
     </script>
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
