@@ -25,26 +25,24 @@
                 <p class="text-gray-600">{{ student.student_id }}</p>
             </div>
         </div>
-    </div>
-
-    <!-- Grades Tabs -->
-    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div class="border-b border-gray-200">
-            <nav class="flex -mb-px">
-                <button onclick="switchTab('activities')" class="tab-btn active-tab px-6 py-4 border-b-2 text-sm font-medium" data-tab="activities">
+    </div>    <!-- Grades Tabs -->        <div class="flex justify-center">
+            <nav class="inline-flex rounded-t-xl bg-white w-fit">
+                <button onclick="switchTab('activities')" class="tab-btn active-tab px-4 py-2.5 rounded-tl-xl text-sm font-medium uppercase text-gray-500 hover:text-green-700 transition-all duration-200" data-tab="activities">
                     Activities
                 </button>
-                <button onclick="switchTab('quiz')" class="tab-btn px-6 py-4 border-b-2 text-sm font-medium" data-tab="quiz">
+                <button onclick="switchTab('quiz')" class="tab-btn px-4 py-2.5 text-sm font-medium uppercase text-gray-500 hover:text-green-700 transition-all duration-200" data-tab="quiz">
                     Quiz
                 </button>
-                <button onclick="switchTab('projects')" class="tab-btn px-6 py-4 border-b-2 text-sm font-medium" data-tab="projects">
+                <button onclick="switchTab('projects')" class="tab-btn px-4 py-2.5 text-sm font-medium uppercase text-gray-500 hover:text-green-700 transition-all duration-200" data-tab="projects">
                     Projects
                 </button>
-                <button onclick="switchTab('exams')" class="tab-btn px-6 py-4 border-b-2 text-sm font-medium" data-tab="exams">
+                <button onclick="switchTab('exams')" class="tab-btn px-4 py-2.5 rounded-tr-xl text-sm font-medium uppercase text-gray-500 hover:text-green-700 transition-all duration-200" data-tab="exams">
                     Exams
                 </button>
             </nav>
         </div>
+
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
         <!-- Tab Content -->
         <div class="tab-content" id="quiz">
@@ -124,11 +122,17 @@
 
 <style>
 .tab-btn {
-    @apply text-gray-500 hover:text-green-700 border-transparent hover:bg-gray-100 transition-all duration-200 border-b-2;
+    background-color: white;
+    border: none;
+    transition: all 0.2s;
 }
 
 .active-tab {
-    @apply text-white border-[#006837] bg-[#006837] font-semibold;
+    background-color: oklch(52.7% 0.154 150.069);
+    color: white !important;
+    font-weight: 600;
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
 }
 
 .tab-content {
@@ -136,7 +140,7 @@
     animation: fadeIn 0.3s ease-in-out;
 }
 
-.tab-content:first-of-type {
+.tab-content.active {
     display: block;
 }
 
@@ -154,30 +158,31 @@
 
 <script>
 function switchTab(tabId) {
-    // Hide all tab contents
+    // First hide all tab contents and remove active classes
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.style.display = 'none';
     });
     
-    // Remove active class from all tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active-tab');
+        btn.classList.add('bg-white');
     });
     
-    // Show selected tab content
-    document.getElementById(tabId).style.display = 'block';
+    // Then show the selected tab and update its styling
+    const selectedTab = document.getElementById(tabId);
+    const selectedBtn = document.querySelector(`[data-tab="${tabId}"]`);
     
-    // Add active class to selected tab
-    document.querySelector(`[data-tab="${tabId}"]`).classList.add('active-tab');
+    if (selectedTab && selectedBtn) {
+        selectedTab.style.display = 'block';
+        selectedBtn.classList.add('active-tab');
+        selectedBtn.classList.remove('bg-white');
+    }
 }
 
-// Show the active tab content on page load
+// Initialize the tabs on page load
 document.addEventListener('DOMContentLoaded', function() {
-    var activeBtn = document.querySelector('.tab-btn.active-tab');
-    if (activeBtn) {
-        var tabId = activeBtn.getAttribute('data-tab');
-        switchTab(tabId);
-    }
+    // Show activities tab by default
+    switchTab('activities');
 });
 </script>
 {% endblock %}
