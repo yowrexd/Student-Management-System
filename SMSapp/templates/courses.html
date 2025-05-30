@@ -20,37 +20,41 @@
     <!-- Course Grid with improved cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
         {% for course in courses %}
-        <div class="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300">
-            <div class="p-5">
+        <div class="group bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 border border-gray-100 hover:shadow-[0_20px_35px_-10px_rgba(0,104,55,0.1)]">
+            <div class="p-6 relative">
+                <!-- Decorative Elements -->
+                <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#006837]/5 to-transparent rounded-bl-full"></div>
+                <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#FFB81C]/5 to-transparent rounded-tr-full"></div>
+
                 <!-- Course Header -->
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-[#006837]/10 flex items-center justify-center">
-                            <span class="text-[#006837] font-semibold">{{ course.course_abv|slice:":2" }}</span>
+                <div class="flex items-start justify-between mb-6 relative z-10">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#006837] to-[#2d8653] flex items-center justify-center text-white font-bold shadow-lg">
+                            {{ course.course_abv|slice:":2" }}
                         </div>
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-800">{{ course.course_abv }}</h3>
+                            <h3 class="text-lg font-bold text-gray-800">{{ course.course_abv }}</h3>
                             <p class="text-sm text-gray-500">Course Code</p>
                         </div>
                     </div>
-
-                    <!-- Action Menu -->
-                    <div class="flex items-center gap-1">
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2">
                         <button onclick="editCourse('{{ course.course_abv }}')" 
-                                class="p-2 text-gray-400 hover:text-[#006837] rounded-lg transition-colors">
+                                class="p-2 text-gray-600 hover:text-[#006837] hover:bg-green-50 rounded-xl transition-colors">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button onclick="deleteCourse('{{ course.course_abv }}')" 
-                                class="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
+                                class="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
 
                 <!-- Course Content -->
-                <div class="mt-4 space-y-3">
-                    <div class="p-3 rounded-lg bg-gray-50">
-                        <p class="text-sm text-gray-500 mb-1">Course Name</p>
+                <div class="mt-4 relative z-10">
+                    <div class="p-4 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-100 group-hover:border-[#006837]/20 transition-all duration-300">
+                        <p class="text-sm font-medium text-[#006837] mb-2">Course Name</p>
                         <p class="text-gray-700">{{ course.course_name }}</p>
                     </div>
                 </div>
@@ -168,14 +172,6 @@
                     </form>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed top-4 right-4 bg-white rounded-lg shadow-lg p-4 transform translate-x-full transition-transform duration-300">
-        <div class="flex items-center">
-            <i id="toastIcon" class="fas fa-check-circle text-green-500 text-xl mr-3"></i>
-            <p id="toastMessage" class="text-gray-800"></p>
         </div>
     </div>
 </div>
