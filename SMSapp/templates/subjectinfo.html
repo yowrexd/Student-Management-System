@@ -251,7 +251,8 @@
     <div id="studentsSection" class="bg-white rounded-lg shadow-sm p-6 hidden">
         <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-semibold">Enrolled Students</h3>
-            <button onclick="openEnrollmentModal()" class="px-4 py-2 bg-[#006837] text-white rounded-xl hover:bg-[#2d8653] flex items-center gap-2">
+            <button onclick="openEnrollmentModal()" 
+                    class="px-4 py-2 bg-[#006837] text-white rounded-xl hover:bg-[#2d8653] flex items-center gap-2">
                 <i class="fas fa-plus"></i>Add Student
             </button>
         </div>
@@ -265,7 +266,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white divide-y divide-gray-200" id="enrolledStudentsTable">
                     {% for enrollment in enrolled_students %}
                     <tr>
                         <td class="px-6 py-4">{{ enrollment.student.student_id }}</td>
@@ -591,15 +592,26 @@ function openEnrollmentModal() {
 }
 
 function loadStudents() {
-    fetch('/api/students/')
-        .then(response => response.json())
-        .then(data => {
-            const tbody = document.getElementById('studentsList');
-            tbody.innerHTML = '';
-            
+    fetch('/api/students/', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'
+    })
+    .then(handleResponse)
+    .then(data => {
+        const tbody = document.getElementById('studentsList');
+        tbody.innerHTML = '';
+        
+        if (Array.isArray(data)) {
             data.forEach(student => {
                 const row = `
-                    <tr class="student-row" data-student-id="${student.student_id}">
+                    <tr class="student-row" 
+                        data-student-id="${student.student_id}"
+                        data-course="${student.course}"
+                        data-year="${student.year_level}"
+                        data-section="${student.section}">
                         <td class="px-6 py-4">
                             <input type="checkbox" class="student-checkbox rounded border-gray-300" 
                                    value="${student.student_id}">
@@ -607,13 +619,21 @@ function loadStudents() {
                         <td class="px-6 py-4">${student.student_id}</td>
                         <td class="px-6 py-4">${student.last_name}, ${student.first_name}</td>
                         <td class="px-6 py-4">${student.course}</td>
-                        <td class="px-6 py-4">${student.year_level}</td>
+                        <td class="px-6 py-4">Year ${student.year_level}</td>
                         <td class="px-6 py-4">${student.section}</td>
                     </tr>
                 `;
                 tbody.innerHTML += row;
             });
-        });
+        } else {
+            console.error('Expected array of students but got:', data);
+            alert('Error loading students: Invalid data format');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to load students: ' + (error.message || 'Unknown error'));
+    });
 }
 
 function showStudentsTab() {
@@ -623,14 +643,47 @@ function showStudentsTab() {
 }
 
 function reloadEnrolledStudents() {
-    fetch(window.location.href)
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const newDoc = parser.parseFromString(html, 'text/html');
-            const newTable = newDoc.querySelector('#studentsSection table');
-            document.querySelector('#studentsSection table').outerHTML = newTable.outerHTML;
-        });
+    const subjectCode = '{{ subject.subject_code }}';
+    fetch(`/api/enrollments/?subject=${subjectCode}`, {
+        credentials: 'same-origin'
+    })
+    .then(handleResponse)
+    .then(data => {
+        const tbody = document.getElementById('enrolledStudentsTable');
+        tbody.innerHTML = '';
+        
+        if (Array.isArray(data)) {
+            data.forEach(enrollment => {
+                const row = `
+                    <tr>
+                        <td class="px-6 py-4">${enrollment.student.student_id}</td>
+                        <td class="px-6 py-4">${enrollment.student.last_name}, ${enrollment.student.first_name}</td>
+                        <td class="px-6 py-4">${enrollment.student.course}</td>
+                        <td class="px-6 py-4">
+                            <button onclick="removeStudent('${enrollment.student.student_id}')" 
+                                    class="text-red-600 hover:text-red-900"
+                                    title="Remove student">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-center text-gray-500">No students enrolled</td>
+                    </tr>
+                `;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to reload enrolled students');
+    });
 }
 
 function enrollSelectedStudents() {
@@ -642,32 +695,62 @@ function enrollSelectedStudents() {
         return;
     }
 
-    const enrollmentData = {
-        subject_code: '{{ subject.subject_code }}',
-        student_ids: selectedStudents
-    };
-
     fetch('/api/enrollments/bulk_enroll/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCSRFToken(),
         },
-        body: JSON.stringify(enrollmentData)
+        body: JSON.stringify({
+            subject_code: '{{ subject.subject_code }}',
+            student_ids: selectedStudents
+        })
     })
     .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
+    .then(result => {
+        if (result.status === 'success') {
             bootstrap.Modal.getInstance(document.getElementById('enrollmentModal')).hide();
             reloadEnrolledStudents();
-            showStudentsTab();
         } else {
-            throw new Error(data.message || 'Failed to enroll students');
+            throw new Error(result.message || 'Failed to enroll students');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to enroll students');
+        alert(error.message || 'Failed to enroll students');
+    });
+}
+
+function removeStudent(studentId) {
+    if (!confirm('Are you sure you want to remove this student from the subject?\n\nThis action cannot be undone.')) {
+        return;
+    }
+
+    fetch('/api/enrollments/remove_student/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken(),
+        },
+        body: JSON.stringify({
+            subject_code: '{{ subject.subject_code }}',
+            student_id: studentId
+        }),
+        credentials: 'same-origin'
+    })
+    .then(handleResponse)
+    .then(result => {
+        if (result.status === 'success') {
+            // Reload only the enrolled students table
+            reloadEnrolledStudents();
+            showStudentsTab();
+        } else {
+            throw new Error(result.message || 'Failed to remove student');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message || 'Failed to remove student');
     });
 }
 
@@ -711,35 +794,6 @@ document.getElementById('selectAll').addEventListener('change', function() {
         }
     });
 });
-
-function removeStudent(studentId) {
-    if (confirm('Are you sure you want to remove this student from the subject?\n\nThis action cannot be undone.')) {
-        fetch('/api/enrollments/remove_student/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCSRFToken(),
-            },
-            body: JSON.stringify({
-                subject_code: '{{ subject.subject_code }}',
-                student_id: studentId
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                reloadEnrolledStudents();
-                showStudentsTab();
-            } else {
-                throw new Error(data.message || 'Failed to remove student');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert(error.message || 'Failed to remove student');
-        });
-    }
-}
 </script>
 
 <style>
