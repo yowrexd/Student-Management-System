@@ -54,7 +54,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     {% for student in students %}
-                    <tr data-student-id="{{ student.student_id }}" class="hover:bg-gray-50/50 transition-colors">
+                    <tr data-student-id="{{ student.student_id }}" class="hover:bg-gray-50/50 transition-colors cursor-pointer" onclick="window.location.href='{% url 'student_info' student.student_id %}'">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="font-medium text-gray-900">{{ student.student_id }}</span>
                         </td>

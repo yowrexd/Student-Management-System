@@ -47,6 +47,38 @@ def subject_info(request, subject_code):
     }
     return render(request, 'subjectinfo.html', context)
 
+def student_info(request, student_id):
+    student = get_object_or_404(Student, student_id=student_id)
+    enrollments = StudentSubjectEnrollment.objects.filter(student=student).select_related('subject')
+    
+    context = {
+        'student': student,
+        'enrollments': enrollments,
+    }
+    return render(request, 'studentinfo.html', context)
+
+def student_subject_info(request, student_id, subject_code):
+    student = get_object_or_404(Student, student_id=student_id)
+    subject = get_object_or_404(Subject, subject_code=subject_code)
+    activities = Activity.objects.filter(subject=subject)
+    
+    # Get grades for each activity
+    grades = {}
+    for activity in activities:
+        grade = Grade.objects.filter(
+            student=student,
+            activity=activity
+        ).first()
+        grades[activity.activity_id] = grade.student_grade if grade else 'N/A'
+    
+    context = {
+        'student': student,
+        'subject': subject,
+        'activities': activities,
+        'grades': grades,
+    }
+    return render(request, 'studentsubinfo.html', context)
+
 class SubjectViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     queryset = Subject.objects.filter(archive=False)

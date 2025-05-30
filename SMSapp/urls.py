@@ -17,6 +17,8 @@ urlpatterns = [
     path('subjects/', views.subjects, name='subjects'),
     path('subjects/<str:subject_code>/', views.subject_info, name='subject_info'),
     path('students/', views.students, name='students'),
+    path('students/<str:student_id>/', views.student_info, name='student_info'),  # Add this line
+    path('students/<str:student_id>/subjects/<str:subject_code>/', views.student_subject_info, name='student_subject_info'),
     path('courses/', views.courses, name='courses'),
     path('activities/<int:activity_id>/grades/', views.grades, name='grades'),
 ]
