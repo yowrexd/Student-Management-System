@@ -47,6 +47,7 @@ class Student(models.Model):
     course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True)
     year_level = models.PositiveSmallIntegerField()
     section = models.CharField(max_length=20)
+    date_added = models.DateTimeField(auto_now_add=True)
 
     objects = StudentManager()
 
@@ -69,6 +70,9 @@ class Subject(models.Model):
     year_level = models.PositiveSmallIntegerField()
     section = models.CharField(max_length=20)
     archive = models.BooleanField(default=False)
+    archived = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    archived_date = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['subject_code']
@@ -86,22 +90,32 @@ class StudentSubjectEnrollment(models.Model):
 
 
 class Activity(models.Model):
-    ACTIVITY_TYPE_CHOICES = [
-        ('Quiz', 'Quiz'),
-        ('Activities', 'Activities'),
-        ('Exam', 'Exam'),
-        ('Project', 'Project'),
-    ]
-
     activity_id = models.AutoField(primary_key=True)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPE_CHOICES)
     activity_name = models.CharField(max_length=100)
-    total_items = models.PositiveIntegerField()
-    date_assigned = models.DateField(default=datetime.date.today)  # Changed from timezone.now
+    activity_type = models.CharField(max_length=50)
+    total_items = models.IntegerField()
 
     def __str__(self):
-        return f"{self.activity_name} ({self.subject})"
+        return f"{self.activity_name} ({self.subject.subject_code})"
+
+    def pending_grades(self):
+        """Returns number of students without grades for this activity"""
+        total_students = self.subject.studentsubjectenrollment_set.count()
+        graded_students = self.grade_set.count()
+        return total_students - graded_students
+
+    def needs_grading(self):
+        """Returns True if there are enrolled students without grades"""
+        enrolled_count = self.subject.studentsubjectenrollment_set.count()
+        graded_count = Grade.objects.filter(activity=self).count()
+        return enrolled_count > graded_count
+
+    def pending_grades_count(self):
+        """Returns number of students that need grading"""
+        enrolled_count = self.subject.studentsubjectenrollment_set.count()
+        graded_count = Grade.objects.filter(activity=self).count()
+        return enrolled_count - graded_count
 
 
 class Grade(models.Model):

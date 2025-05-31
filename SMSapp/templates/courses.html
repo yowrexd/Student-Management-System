@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block content %}
+{% csrf_token %}
 <div class="p-6 min-h-screen">
     <!-- Header Section with updated styling -->
     <div class="flex justify-between items-center mb-8">
@@ -18,44 +19,50 @@
     </div>
 
     <!-- Course Grid with improved cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {% for course in courses %}
-        <div class="group bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 border border-gray-100 hover:shadow-[0_20px_35px_-10px_rgba(0,104,55,0.1)]">
+        <div class="relative group bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 border border-gray-100 hover:shadow-[0_20px_35px_-10px_rgba(0,104,55,0.1)]">
+            <!-- 3-dots Dropdown Button -->
+            <div class="absolute top-6 right-6 z-50">
+                <button type="button" 
+                        class="p-2 rounded-full transition-colors relative" 
+                        onclick="event.preventDefault(); toggleDropdown(this)">
+                    <i class="fas fa-ellipsis-v text-gray-600"></i>
+                </button>
+                <div class="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 hidden">
+                    <button onclick="editCourse('{{ course.course_abv }}')" 
+                            class="w-full text-left px-4 py-3 hover:bg-green-50 text-gray-700 flex items-center gap-2 rounded-t-xl">
+                        <i class="fas fa-edit text-[#006837]"></i> Edit
+                    </button>
+                    <button onclick="deleteCourse('{{ course.course_abv }}')" 
+                            class="w-full text-left px-4 py-3 hover:bg-red-50 text-red-600 flex items-center gap-2 rounded-b-xl">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+            
             <div class="p-6 relative">
                 <!-- Decorative Elements -->
                 <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#006837]/5 to-transparent rounded-bl-full"></div>
                 <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#FFB81C]/5 to-transparent rounded-tr-full"></div>
 
                 <!-- Course Header -->
-                <div class="flex items-start justify-between mb-6 relative z-10">
+                <div class="mb-6 relative z-10 pr-20">
                     <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#006837] to-[#2d8653] flex items-center justify-center text-white font-bold shadow-lg">
-                            {{ course.course_abv|slice:":2" }}
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#006837] to-[#2d8653] flex items-center justify-center text-white font-bold shadow-lg transform group-hover:scale-110 transition-all duration-300">
+                            {{ course.course_abv}}
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-800">{{ course.course_abv }}</h3>
                             <p class="text-sm text-gray-500">Course Code</p>
                         </div>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="flex gap-2">
-                        <button onclick="editCourse('{{ course.course_abv }}')" 
-                                class="p-2 text-gray-600 hover:text-[#006837] hover:bg-green-50 rounded-xl transition-colors">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="deleteCourse('{{ course.course_abv }}')" 
-                                class="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-                            <i class="fas fa-trash"></i>
-                        </button>
                     </div>
                 </div>
 
                 <!-- Course Content -->
-                <div class="mt-4 relative z-10">
-                    <div class="p-4 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-100 group-hover:border-[#006837]/20 transition-all duration-300">
-                        <p class="text-sm font-medium text-[#006837] mb-2">Course Name</p>
-                        <p class="text-gray-700">{{ course.course_name }}</p>
+                <div class="relative z-10">
+                    <div class="p-4 rounded-xl bg-gray-50 group-hover:bg-green-50/50 transition-colors">
+                        <p class="text-xs text-gray-500">Course Name</p>
+                        <p class="font-medium text-gray-700 mt-1">{{ course.course_name }}</p>
                     </div>
                 </div>
             </div>
@@ -210,6 +217,15 @@ function openModal() {
     myModal.show();
 }
 
+function handleApiResponse(response, successMessage) {
+    if (response.status === 'success') {
+        showToast(successMessage || 'Operation completed successfully', 'success');
+        setTimeout(() => location.reload(), 1500);
+    } else {
+        showToast(response.message || 'An error occurred', 'error');
+    }
+}
+
 document.getElementById('courseForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
@@ -224,17 +240,10 @@ document.getElementById('courseForm').addEventListener('submit', function(e) {
         body: JSON.stringify(data)
     })
     .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            showToast('Course added successfully!');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            alert(data.message || 'Error creating course');
-        }
-    })
+    .then(data => handleApiResponse(data, 'Course added successfully!'))
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while creating the course');
+        showToast('Failed to add course', 'error');
     });
 });
 
@@ -267,17 +276,10 @@ document.getElementById('editCourseForm').addEventListener('submit', function(e)
         })
     })
     .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            showToast('Course updated successfully!');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            throw new Error(data.message || 'Error updating course');
-        }
-    })
+    .then(data => handleApiResponse(data, 'Course updated successfully!'))
     .catch(error => {
         console.error('Error:', error);
-        alert(error.message || 'An error occurred while updating the course');
+        showToast('Failed to update course', 'error');
     });
 });
 
@@ -290,17 +292,10 @@ function deleteCourse(courseAbv) {
             }
         })
         .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                showToast('Course deleted successfully!');
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                alert(data.message || 'Error deleting course');
-            }
-        })
+        .then(data => handleApiResponse(data, 'Course deleted successfully!'))
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while deleting the course');
+            showToast('Failed to delete course', 'error');
         });
     }
 }
@@ -319,5 +314,31 @@ function showToast(message, type = 'success') {
     toast.classList.remove('translate-x-full');
     setTimeout(() => toast.classList.add('translate-x-full'), 3000);
 }
+
+// Add the dropdown toggle function
+function toggleDropdown(button) {
+    // Close all other dropdowns
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        if (menu !== button.nextElementSibling) {
+            menu.classList.add('hidden');
+        }
+    });
+
+    const menu = button.nextElementSibling;
+    menu.classList.toggle('hidden');
+
+    // Handle outside clicks
+    document.addEventListener('click', function closeMenu(e) {
+        if (!button.contains(e.target) && !menu.contains(e.target)) {
+            menu.classList.add('hidden');
+            document.removeEventListener('click', closeMenu);
+        }
+    });
+}
+
+// Add click handler to prevent closing when clicking inside dropdown
+document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    menu.addEventListener('click', (e) => e.stopPropagation());
+});
 </script>
 {% endblock %}

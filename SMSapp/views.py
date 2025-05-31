@@ -1,8 +1,11 @@
 from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from .models import Subject, Activity, Grade, Student, Course
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.http import JsonResponse
 from django.db import models  # Add this import
 from .models import Subject, Activity, StudentSubjectEnrollment, Course, Student, Grade
 from .serializers import (
@@ -13,13 +16,39 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from datetime import datetime
+from django.utils import timezone
+from django.db.models import Count, Q, OuterRef, Exists
 
 def index(request):
-    return render(request, 'index.html')
+    # Get counts for dashboard
+    total_students = Student.objects.count()
+    total_courses = Course.objects.count()
+    total_subjects = Subject.objects.count()
+
+    # Count activities without grades (pending activities)
+    pending_activities = Activity.objects.exclude(
+        activity_id__in=Grade.objects.values('activity')
+    ).count()
+
+    # Get recent activities without using date_assigned
+    recent_activities = Activity.objects.all().order_by('-activity_id')[:5]
+
+    context = {
+        'total_students': total_students,
+        'total_courses': total_courses,
+        'total_subjects': total_subjects,
+        'pending_activities': pending_activities,
+        'new_students': Student.objects.count(),
+        'recent_students': Student.objects.all()[:5],
+        'recent_activities': recent_activities,
+    }
+    
+    return render(request, 'index.html', context)
 
 # default view for subjects
 def subjects(request):
-    subjects = Subject.objects.filter(archive=False).select_related('course')
+    subjects = Subject.objects.filter(is_active=True)  # Only show non-archived subjects
     courses = Course.objects.all()
     context = {
         'subjects': subjects,
@@ -29,22 +58,22 @@ def subjects(request):
 
 # view for subject details including activities and enrolled students
 def subject_info(request, subject_code):
-    subject = Subject.objects.get(subject_code=subject_code)
+    subject = get_object_or_404(Subject, subject_code=subject_code)
     activities = Activity.objects.filter(subject=subject)
-    enrolled_students = StudentSubjectEnrollment.objects.filter(subject=subject).select_related('student')
     
-    # Get unique courses and sections from existing students
-    all_students = Student.objects.all()
-    student_courses = Course.objects.filter(student__in=all_students).distinct()
-    student_sections = all_students.values_list('section', flat=True).distinct()
-    
+    # Count activities that have no grades
+    pending_activities = activities.exclude(
+        activity_id__in=Grade.objects.values('activity')
+    ).count()
+
     context = {
         'subject': subject,
         'activities': activities,
-        'enrolled_students': enrolled_students,
-        'student_courses': student_courses,
-        'student_sections': student_sections,
+        'pending_activities': pending_activities,
+        'student_courses': Course.objects.all(),
+        'student_sections': list(set(Student.objects.values_list('section', flat=True)))
     }
+    
     return render(request, 'subjectinfo.html', context)
 
 def student_info(request, student_id):
@@ -614,3 +643,97 @@ class GradeViewSet(viewsets.ModelViewSet):
                 'status': 'error',
                 'message': str(e)
             }, status=400)
+
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
+def activities_api(request, activity_id=None):
+    if request.method == 'POST':
+        try:
+            activity_data = {
+                'subject': Subject.objects.get(subject_code=request.data.get('subject')),
+                'activity_type': request.data.get('activity_type'),
+                'activity_name': request.data.get('activity_name'),
+                'total_items': request.data.get('total_items')
+            }
+            activity = Activity.objects.create(**activity_data)
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Activity created successfully',
+                'data': ActivitySerializer(activity).data
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    
+    elif request.method == 'GET':
+        if activity_id:
+            activity = get_object_or_404(Activity, activity_id=activity_id)
+            return JsonResponse({
+                'status': 'success',
+                'data': {
+                    'activity_id': activity.activity_id,
+                    'activity_type': activity.activity_type,
+                    'activity_name': activity.activity_name,
+                    'total_items': activity.total_items
+                }
+            })
+        else:
+            activities = Activity.objects.all()
+            return JsonResponse({'status': 'success', 'data': ActivitySerializer(activities, many=True).data})
+
+    elif request.method == 'PUT':
+        try:
+            activity = get_object_or_404(Activity, activity_id=activity_id)
+            activity.activity_type = request.data.get('activity_type')
+            activity.activity_name = request.data.get('activity_name')
+            activity.total_items = request.data.get('total_items')
+            activity.save()
+            
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+    elif request.method == 'DELETE':
+        try:
+            activity = get_object_or_404(Activity, activity_id=activity_id)
+            activity.delete()
+            return JsonResponse({'status': 'success', 'message': 'Activity deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@api_view(['POST'])
+def archive_subject(request, subject_code):
+    try:
+        subject = get_object_or_404(Subject, subject_code=subject_code)
+        subject.is_active = False
+        subject.archived_date = timezone.now()
+        subject.save()
+        return JsonResponse({'status': 'success'})
+    except Subject.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Subject not found'}, status=404)
+
+@api_view(['DELETE'])
+def delete_subject(request, subject_code):
+    try:
+        subject = Subject.objects.get(subject_code=subject_code)
+        subject.delete()
+        return JsonResponse({'status': 'success'})
+    except Subject.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Subject not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@api_view(['POST'])
+def unarchive_subject(request, subject_code):
+    try:
+        subject = Subject.objects.get(subject_code=subject_code)
+        subject.is_active = True
+        subject.archived_date = None
+        subject.save()
+        return JsonResponse({'status': 'success'})
+    except Subject.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Subject not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+def archived_subjects(request):
+    subjects = Subject.objects.filter(is_active=False)
+    return render(request, 'archived_subjects.html', {'subjects': subjects})
