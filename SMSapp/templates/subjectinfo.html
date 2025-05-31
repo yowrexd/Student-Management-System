@@ -29,16 +29,16 @@
                     </div>
                     
                     <!-- Subject Details Grid -->
-                    <div class="grid grid-cols-3 gap-4 mt-8">
-                        <div class="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                    <div class="grid grid-cols-3 gap-4 mt-4">
+                        <div class="p-2">
                             <p class="text-sm text-gray-500 mb-1">Course</p>
                             <p class="font-semibold text-gray-800">{{ subject.course.course_abv }}</p>
                         </div>
-                        <div class="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                        <div class="p-2 rounded-xl">
                             <p class="text-sm text-gray-500 mb-1">Year Level</p>
                             <p class="font-semibold text-gray-800">Year {{ subject.year_level }}</p>
                         </div>
-                        <div class="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                        <div class="p-2">
                             <p class="text-sm text-gray-500 mb-1">Section</p>
                             <p class="font-semibold text-gray-800">{{ subject.section }}</p>
                         </div>
@@ -46,7 +46,7 @@
                 </div>
 
                 <!-- Stats Card -->
-                <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 relative overflow-hidden">
+                <div class="bg-gradient-to-br from-green-300 to-green-50 rounded-2xl p-6 relative overflow-hidden">
                     <div class="relative z-10">
                         <p class="text-sm font-medium text-gray-600 mb-1">Activities to Grade</p>
                         <h3 class="text-4xl font-bold text-gray-800">
@@ -63,13 +63,13 @@
     <!-- Navigation Tabs -->
     <div class="flex gap-2 mb-6">
         <button id="classworkBtn" 
-                class="px-6 py-3 rounded-xl font-medium transition-all duration-200 bg-white shadow-sm hover:shadow-md flex items-center gap-2">
-            <i class="fas fa-book-open text-[#006837]"></i>
+                class="px-3 py-3 rounded-xl font-medium transition-all duration-200 bg-white shadow-sm hover:shadow-md flex items-center gap-2">
+            <i class="fas fa-book-open"></i>
             <span>Classworks</span>
         </button>
         <button id="studentsBtn"
-                class="px-6 py-3 rounded-xl font-medium transition-all duration-200 bg-white shadow-sm hover:shadow-md flex items-center gap-2">
-            <i class="fas fa-users text-[#006837]"></i>
+                class="px-3 py-3 rounded-xl font-medium transition-all duration-200 bg-white shadow-sm hover:shadow-md flex items-center gap-2">
+            <i class="fas fa-users"></i>
             <span>People</span>
         </button>
     </div>
@@ -101,13 +101,13 @@
         <!-- Activities Table with modern styling -->
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50 border-b border-gray-100">
+                <thead class="bg-green-700 border-b border-gray-100">
                     <tr>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Activity Name</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Type</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">No. of graded</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Total Score</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-white uppercase">Activity Name</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-white uppercase">Type</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-white uppercase">Graded Students</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-white uppercase">Total Score</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-white uppercase">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -126,7 +126,7 @@
                         </td>
                         <td class="px-6 py-4 text-center">{{ activity.activity_type }}</td>
                         <td class="px-6 py-4 text-center">
-                            {{ activity.graded_count }}/{{ total_students }} graded
+                            {{ activity.graded_count }}/{{ total_students }}
                             {% if activity.is_pending %}
                                 <span class="text-yellow-600 text-xs">
                                     ({{ total_students|sub:activity.graded_count }} pending)
@@ -140,10 +140,6 @@
                             <button onclick="editActivity({{ activity.activity_id }})" class="text-blue-500 hover:text-blue-300 mr-3"><i class="fas fa-edit"></i></button>
                             <button onclick="deleteActivity({{ activity.activity_id }})" class="text-red-500 hover:text-red-300"><i class="fas fa-trash"></i></button>
                         </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="px-6 py-4 text-center text-gray-500">No classwork available</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -286,22 +282,19 @@
         <!-- Students Table -->
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50 border-b border-gray-100">
+                <thead class="bg-green-700 border-b border-gray-100">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year & Section</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-white uppercase">Name</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-white uppercase">Student ID</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-white uppercase">Course</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-white uppercase">Year & Section</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-white uppercase">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100" id="enrolledStudentsTable">
                     {% for enrollment in enrolled_students %}
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-sm font-medium text-gray-900">{{ enrollment.student.student_id }}</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
                             <div class="flex items-center">
                                 <div class="h-8 w-8 rounded-full bg-[#006837] flex items-center justify-center text-white font-medium text-sm">
                                     {{ enrollment.student.first_name|slice:":1" }}{{ enrollment.student.last_name|slice:":1" }}
@@ -312,15 +305,18 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="text-sm font-medium text-gray-900">{{ enrollment.student.student_id }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 {{ enrollment.student.course.course_abv }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                             Year {{ enrollment.student.year_level }} - {{ enrollment.student.section }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
                             <button onclick="removeStudent('{{ enrollment.student.student_id }}')" 
                                     class="text-red-600 hover:text-red-900 transition-colors">
                                 <i class="fas fa-user-minus"></i>
@@ -413,10 +409,10 @@ const classworkSection = document.getElementById('classworkSection');
 const studentsSection = document.getElementById('studentsSection');
 
 function setActiveButton(activeBtn, inactiveBtn) {
-    activeBtn.classList.add('bg-gray-100', 'text-gray-900');
-    activeBtn.classList.remove('text-gray-500');
-    inactiveBtn.classList.remove('bg-gray-100', 'text-gray-900');
-    inactiveBtn.classList.add('text-gray-500');
+    activeBtn.classList.add('bg-[#006837]', 'text-white');
+    activeBtn.classList.remove('text-gray-500', 'bg-white');
+    inactiveBtn.classList.remove('bg-[#006837]', 'text-white');
+    inactiveBtn.classList.add('text-gray-500', 'bg-white');
 }
 
 classworkBtn.addEventListener('click', function() {
@@ -476,14 +472,38 @@ document.getElementById('classworkForm').addEventListener('submit', function(e) 
 function filterActivities() {
     const filterValue = document.getElementById('activityFilter').value;
     const rows = document.querySelectorAll('.activity-row');
+    let hasVisibleRows = false;
     
     rows.forEach(row => {
         if (filterValue === 'all' || row.dataset.type === filterValue) {
             row.style.display = '';
+            hasVisibleRows = true;
         } else {
             row.style.display = 'none';
         }
     });
+    
+    // Get the tbody element
+    const tbody = document.querySelector('tbody');
+    const noResultsRow = document.getElementById('noActivitiesRow');
+    
+    // If no activities are visible, show the message
+    if (!hasVisibleRows) {
+        if (!noResultsRow) {
+            tbody.insertAdjacentHTML('beforeend', `
+                <tr id="noActivitiesRow">
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                        No ${filterValue === 'all' ? 'activities' : filterValue.toLowerCase()} found
+                    </td>
+                </tr>
+            `);
+        } else {
+            noResultsRow.querySelector('td').textContent = `No ${filterValue === 'all' ? 'activities' : filterValue.toLowerCase()} found`;
+            noResultsRow.style.display = '';
+        }
+    } else if (noResultsRow) {
+        noResultsRow.style.display = 'none';
+    }
 }
 
 function editActivity(activityId) {

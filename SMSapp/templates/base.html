@@ -173,7 +173,7 @@
                     </div>
                     <span class="nav-text">Students</span>
                 </a>
-                <a href="{% url 'subjects' %}" class="nav-link flex items-center {% if request.path == '/subjects/' %}active{% endif %}">
+                <a href="{% url 'subjects' %}" class="nav-link flex items-center {% if request.resolver_match.url_name == 'subjects' or request.resolver_match.url_name == 'subject_info' or request.resolver_match.url_name == 'grades' %}active{% endif %}">
                     <div class="nav-icon">
                         <i class="fas fa-chalkboard-teacher"></i>
                     </div>

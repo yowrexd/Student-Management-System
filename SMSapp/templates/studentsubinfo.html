@@ -25,7 +25,7 @@
                 <p class="text-gray-600">{{ student.student_id }}</p>
             </div>
         </div>
-    </div>    <!-- Grades Tabs -->        <div class="flex justify-center">
+    </div>    <!-- Grades Tabs -->        <div class="flex justify-start">
             <nav class="inline-flex rounded-t-xl bg-white w-fit">
                 <button onclick="switchTab('activities')" class="tab-btn active-tab px-4 py-2.5 rounded-tl-xl text-sm font-medium uppercase text-gray-500 hover:text-green-700 transition-all duration-200" data-tab="activities">
                     Activities
@@ -40,9 +40,7 @@
                     Exams
                 </button>
             </nav>
-        </div>
-
-    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        </div>    <div id="contentContainer" class="bg-white shadow-sm overflow-hidden rounded-2xl">
 
         <!-- Tab Content -->
         <div class="tab-content" id="quiz">
@@ -171,11 +169,16 @@ function switchTab(tabId) {
     // Then show the selected tab and update its styling
     const selectedTab = document.getElementById(tabId);
     const selectedBtn = document.querySelector(`[data-tab="${tabId}"]`);
+    const contentContainer = document.getElementById('contentContainer');
     
     if (selectedTab && selectedBtn) {
         selectedTab.style.display = 'block';
         selectedBtn.classList.add('active-tab');
         selectedBtn.classList.remove('bg-white');
+        
+        // Update container border radius based on active tab
+        contentContainer.className = 'bg-white shadow-sm overflow-hidden ' + 
+            (tabId === 'activities' ? 'rounded-tr-2xl rounded-bl-2xl rounded-br-2xl' : 'rounded-2xl');
     }
 }
 
