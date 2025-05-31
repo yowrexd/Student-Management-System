@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block content %}
 <div class="min-h-screen p-6 bg-gradient-to-br from-gray-50 to-gray-100">
@@ -117,9 +118,24 @@
                                class="text-blue-600 hover:text-blue-800">
                                 {{ activity.activity_name }}
                             </a>
+                            {% if activity.is_pending %}
+                                <span class="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                                    Pending
+                                </span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4">{{ activity.activity_type }}</td>
-                        <td class="px-6 py-4">{{ activity.total_items }}</td>
+                        <td class="px-6 py-4">
+                            {{ activity.graded_count }}/{{ total_students }} graded
+                            {% if activity.is_pending %}
+                                <span class="text-yellow-600 text-xs">
+                                    ({{ total_students|sub:activity.graded_count }} pending)
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {{ activity.total_items }}
+                        </td>
                         <td class="px-6 py-4">
                             <button onclick="editActivity({{ activity.activity_id }})" class="text-blue-500 hover:text-blue-300 mr-3"><i class="fas fa-edit"></i></button>
                             <button onclick="deleteActivity({{ activity.activity_id }})" class="text-red-500 hover:text-red-300"><i class="fas fa-trash"></i></button>
@@ -253,41 +269,67 @@
     </div>
 
     <!-- Students Section -->
-    <div id="studentsSection" class="bg-white rounded-lg shadow-sm p-6 hidden">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-semibold">Enrolled Students</h3>
-            <button onclick="openEnrollmentModal()" 
-                    class="px-4 py-2 bg-[#006837] text-white rounded-xl hover:bg-[#2d8653] flex items-center gap-2">
-                <i class="fas fa-plus"></i>Add Student
-            </button>
+    <div id="studentsSection" class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-gray-100">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Students</h3>
+                </div>
+                <button onclick="openEnrollmentModal()" 
+                        class="px-4 py-2 bg-[#006837] text-white rounded-xl hover:bg-[#2d8653] transition-colors flex items-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    <span>Add Student</span>
+                </button>
+            </div>
         </div>
+
+        <!-- Students Table -->
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-200">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year & Section</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="enrolledStudentsTable">
+                <tbody class="divide-y divide-gray-100" id="enrolledStudentsTable">
                     {% for enrollment in enrolled_students %}
-                    <tr>
-                        <td class="px-6 py-4">{{ enrollment.student.student_id }}</td>
-                        <td class="px-6 py-4">{{ enrollment.student.last_name }}, {{ enrollment.student.first_name }}</td>
-                        <td class="px-6 py-4">{{ enrollment.student.course.course_name }}</td>
-                        <td class="px-6 py-4">
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm font-medium text-gray-900">{{ enrollment.student.student_id }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-[#006837] flex items-center justify-center text-white font-medium text-sm">
+                                    {{ enrollment.student.first_name|slice:":1" }}{{ enrollment.student.last_name|slice:":1" }}
+                                </div>
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900">{{ enrollment.student.last_name }}, {{ enrollment.student.first_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ enrollment.student.middle_name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {{ enrollment.student.course.course_abv }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            Year {{ enrollment.student.year_level }} - {{ enrollment.student.section }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
                             <button onclick="removeStudent('{{ enrollment.student.student_id }}')" 
-                                    class="text-red-600 hover:text-red-900"
-                                    title="Remove student">
+                                    class="text-red-600 hover:text-red-900 transition-colors">
                                 <i class="fas fa-user-minus"></i>
                             </button>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="px-6 py-4 text-center text-gray-500">No students enrolled</td>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">No students enrolled</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -310,25 +352,6 @@
                 <div class="p-6">
                     <!-- Filters -->
                     <div class="flex gap-4 mb-6">
-                        <select id="courseFilter" class="px-4 py-2 rounded-xl border border-gray-200 text-sm">
-                            <option value="">All Courses</option>
-                            {% for course in student_courses %}
-                            <option value="{{ course.course_abv }}">{{ course.course_abv }}</option>
-                            {% endfor %}
-                        </select>
-                        <select id="yearFilter" class="px-4 py-2 rounded-xl border border-gray-200 text-sm">
-                            <option value="">All Years</option>
-                            <option value="1">1st Year</option>
-                            <option value="2">2nd Year</option>
-                            <option value="3">3rd Year</option>
-                            <option value="4">4th Year</option>
-                        </select>
-                        <select id="sectionFilter" class="px-4 py-2 rounded-xl border border-gray-200 text-sm">
-                            <option value="">All Sections</option>
-                            {% for section in student_sections %}
-                            <option value="{{ section }}">Section {{ section }}</option>
-                            {% endfor %}
-                        </select>
                         <input type="text" 
                                id="studentSearch" 
                                placeholder="Search by ID or name..." 
@@ -590,77 +613,107 @@ function openEnrollmentModal() {
 }
 
 function loadStudents() {
-    fetch('/api/students/', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        credentials: 'same-origin'
-    })
-    .then(handleResponse)
-    .then(data => {
-        const tbody = document.getElementById('studentsList');
-        tbody.innerHTML = '';
-        
-        if (Array.isArray(data)) {
-            data.forEach(student => {
-                const row = `
-                    <tr class="student-row" 
-                        data-student-id="${student.student_id}"
-                        data-course="${student.course}"
-                        data-year="${student.year_level}"
-                        data-section="${student.section}">
-                        <td class="px-6 py-4">
-                            <input type="checkbox" class="student-checkbox rounded border-gray-300" 
-                                   value="${student.student_id}">
-                        </td>
-                        <td class="px-6 py-4">${student.student_id}</td>
-                        <td class="px-6 py-4">${student.last_name}, ${student.first_name}</td>
-                        <td class="px-6 py-4">${student.course}</td>
-                        <td class="px-6 py-4">Year ${student.year_level}</td>
-                        <td class="px-6 py-4">${student.section}</td>
-                    </tr>
-                `;
-                tbody.innerHTML += row;
-            });
-        } else {
-            console.error('Expected array of students but got:', data);
-            alert('Error loading students: Invalid data format');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to load students: ' + (error.message || 'Unknown error'));
-    });
-}
-
-function showStudentsTab() {
-    setActiveButton(studentsBtn, classworkBtn);
-    studentsSection.classList.remove('hidden');
-    classworkSection.classList.add('hidden');
+    const tbody = document.getElementById('studentsList');
+    tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Loading students...</td></tr>';
+    
+    fetch(`/api/subjects/{{ subject.subject_code }}/available-students/`)
+        .then(response => response.json())
+        .then(data => {
+            tbody.innerHTML = '';
+            
+            if (data.status === 'success') {
+                const students = data.data || [];
+                if (students.length > 0) {
+                    students.forEach(student => {
+                        const statusBadge = student.status === 'I' 
+                            ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Irregular</span>'
+                            : '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Regular</span>';
+                            
+                        const row = `
+                            <tr class="student-row hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <input type="checkbox" class="student-checkbox rounded border-gray-300" 
+                                           value="${student.student_id}">
+                                </td>
+                                <td class="px-6 py-4">${student.student_id}</td>
+                                <td class="px-6 py-4">${student.last_name}, ${student.first_name}</td>
+                                <td class="px-6 py-4">${student.course}</td>
+                                <td class="px-6 py-4">Year ${student.year_level}</td>
+                                <td class="px-6 py-4">Section ${student.section}</td>
+                                <td class="px-6 py-4">${statusBadge}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                No available students found
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-6 py-4 text-center text-red-500">
+                        Failed to load students. Please try again.
+                    </td>
+                </tr>
+            `;
+        });
 }
 
 function reloadEnrolledStudents() {
     const subjectCode = '{{ subject.subject_code }}';
+    
     fetch(`/api/enrollments/?subject=${subjectCode}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken(),
+        },
         credentials: 'same-origin'
     })
-    .then(handleResponse)
-    .then(data => {
+    .then(response => response.json())
+    .then(enrollments => {
         const tbody = document.getElementById('enrolledStudentsTable');
         tbody.innerHTML = '';
         
-        if (Array.isArray(data)) {
-            data.forEach(enrollment => {
+        if (enrollments && enrollments.length > 0) {
+            enrollments.forEach(enrollment => {
+                const student = enrollment.student;
                 const row = `
-                    <tr>
-                        <td class="px-6 py-4">${enrollment.student.student_id}</td>
-                        <td class="px-6 py-4">${enrollment.student.last_name}, ${enrollment.student.first_name}</td>
-                        <td class="px-6 py-4">${enrollment.student.course}</td>
-                        <td class="px-6 py-4">
-                            <button onclick="removeStudent('${enrollment.student.student_id}')" 
-                                    class="text-red-600 hover:text-red-900"
-                                    title="Remove student">
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm font-medium text-gray-900">${student.student_id}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-[#006837] flex items-center justify-center text-white font-medium text-sm">
+                                    ${student.first_name.charAt(0)}${student.last_name.charAt(0)}
+                                </div>
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900">${student.last_name}, ${student.first_name}</div>
+                                    <div class="text-sm text-gray-500">${student.middle_name || ''}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ${student.course.course_abv}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            Year ${student.year_level} - ${student.section}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button onclick="removeStudent('${student.student_id}')" 
+                                    class="text-red-600 hover:text-red-900 transition-colors">
                                 <i class="fas fa-user-minus"></i>
                             </button>
                         </td>
@@ -668,19 +721,24 @@ function reloadEnrolledStudents() {
                 `;
                 tbody.innerHTML += row;
             });
-
-            if (data.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-6 py-4 text-center text-gray-500">No students enrolled</td>
-                    </tr>
-                `;
-            }
+        } else {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">No students enrolled</td>
+                </tr>
+            `;
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to reload enrolled students');
+        const tbody = document.getElementById('enrolledStudentsTable');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-red-500">
+                    Failed to load enrolled students. Please try again.
+                </td>
+            </tr>
+        `;
     });
 }
 
@@ -693,29 +751,122 @@ function enrollSelectedStudents() {
         return;
     }
 
+    console.log('Selected students:', selectedStudents); // Debug log
+
     fetch('/api/enrollments/bulk_enroll/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCSRFToken(),
+            'X-CSRFToken': getCSRFToken()
         },
         body: JSON.stringify({
             subject_code: '{{ subject.subject_code }}',
             student_ids: selectedStudents
         })
     })
-    .then(response => response.json())
-    .then(result => {
-        if (result.status === 'success') {
+    .then(response => {
+        console.log('Response status:', response.status); // Debug log
+        return response.json().then(data => {
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to enroll students');
+            }
+            return data;
+        });
+    })
+    .then(data => {
+        console.log('Enrollment response:', data); // Debug log
+        if (data.status === 'success') {
+            // Close the modal
             bootstrap.Modal.getInstance(document.getElementById('enrollmentModal')).hide();
+            
+            // Show success message
+            alert(data.message);
+            
+            // Reload the enrolled students list
             reloadEnrolledStudents();
+            
+            // Switch to students tab
+            showStudentsTab();
         } else {
-            throw new Error(result.message || 'Failed to enroll students');
+            throw new Error(data.message || 'Failed to enroll students');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert(error.message || 'Failed to enroll students');
+        alert(error.message || 'Failed to enroll students. Please try again.');
+    });
+}
+
+function showStudentsTab() {
+    setActiveButton(studentsBtn, classworkBtn);
+    studentsSection.classList.remove('hidden');
+    classworkSection.classList.add('hidden');
+}
+
+function reloadEnrolledStudents() {
+    const subjectCode = '{{ subject.subject_code }}';
+    
+    fetch(`/api/enrollments/?subject=${subjectCode}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken(),
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(enrollments => {
+        const tbody = document.getElementById('enrolledStudentsTable');
+        tbody.innerHTML = '';
+        
+        if (enrollments && enrollments.length > 0) {
+            enrollments.forEach(enrollment => {
+                const student = enrollment.student;
+                const row = `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm font-medium text-gray-900">${student.student_id}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-[#006837] flex items-center justify-center text-white font-medium text-sm">
+                                    ${student.first_name.charAt(0)}${student.last_name.charAt(0)}
+                                </div>
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900">${student.last_name}, ${student.first_name}</div>
+                                    <div class="text-sm text-gray-500">${student.middle_name || ''}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ${student.course.course_abv}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            Year ${student.year_level} - ${student.section}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button onclick="removeStudent('${student.student_id}')" 
+                                    class="text-red-600 hover:text-red-900 transition-colors">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        } else {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">No students enrolled</td>
+                </tr>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Failed to reload enrolled students', 'error');
     });
 }
 
@@ -792,6 +943,36 @@ document.getElementById('selectAll').addEventListener('change', function() {
         }
     });
 });
+
+function loadSections() {
+    const courseId = document.getElementById('course').value;
+    const yearLevel = document.getElementById('year_level').value;
+    
+    if (!courseId || !yearLevel) return;
+    
+    fetch(`/api/sections/?course=${courseId}&year=${yearLevel}`)
+        .then(response => response.json())
+        .then(data => {
+            const sectionSelect = document.getElementById('section');
+            sectionSelect.innerHTML = '<option value="">Select Section</option>';
+            
+            if (data.status === 'success' && data.data.length > 0) {
+                data.data.forEach(section => {
+                    sectionSelect.innerHTML += `
+                        <option value="${section.name}">${section.name}</option>
+                    `;
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading sections:', error);
+            showToast('Failed to load sections', 'error');
+        });
+}
+
+// Add event listeners to course and year level fields
+document.getElementById('course').addEventListener('change', loadSections);
+document.getElementById('year_level').addEventListener('change', loadSections);
 </script>
 
 <style>

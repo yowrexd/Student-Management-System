@@ -3,12 +3,12 @@ from rest_framework.routers import DefaultRouter
 from . import views
 
 router = DefaultRouter()
-router.register(r'subjects', views.SubjectViewSet, basename='api-subjects')
-router.register(r'activities', views.ActivityViewSet, basename='api-activities')
-router.register(r'enrollments', views.EnrollmentViewSet, basename='api-enrollments')
-router.register(r'courses', views.CourseViewSet, basename='api-courses')
-router.register(r'students', views.StudentViewSet, basename='api-students')
-router.register(r'grades', views.GradeViewSet, basename='api-grades')
+router.register(r'subjects', views.SubjectViewSet)
+router.register(r'activities', views.ActivityViewSet)
+router.register(r'enrollments', views.EnrollmentViewSet, basename='enrollment')
+router.register(r'courses', views.CourseViewSet)
+router.register(r'students', views.StudentViewSet)
+router.register(r'sections', views.SectionViewSet, basename='section')
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -25,4 +25,9 @@ urlpatterns = [
     path('api/subjects/<str:subject_code>/archive/', views.archive_subject, name='archive_subject'),
     path('api/subjects/<str:subject_code>/', views.delete_subject, name='delete_subject'),
     path('api/subjects/<str:subject_code>/unarchive/', views.unarchive_subject, name='unarchive_subject'),
+    path('api/sections/', views.get_sections, name='get_sections'),
+    path('api/sections/add/', views.add_section, name='add_section'),
+    path('api/subjects/<str:subject_code>/available-students/', views.get_available_students, name='get_available_students'),
+    path('api/student-sections/', views.get_student_sections, name='student_sections'),  # Use existing view
+    path('api/subject-sections/', views.get_student_sections, name='subject_sections'),
 ]

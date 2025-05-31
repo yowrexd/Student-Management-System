@@ -40,6 +40,11 @@ class StudentManager(models.Manager):
 
 
 class Student(models.Model):
+    STATUS_CHOICES = [
+        ('R', 'Regular'),
+        ('I', 'Irregular')
+    ]
+    
     student_id = models.CharField(max_length=20, primary_key=True)
     last_name = models.CharField(max_length=50)
     first_name = models.CharField(max_length=50)
@@ -48,6 +53,7 @@ class Student(models.Model):
     year_level = models.PositiveSmallIntegerField()
     section = models.CharField(max_length=20)
     date_added = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=1, choices=STATUS_CHOICES, default='R')
 
     objects = StudentManager()
 
@@ -126,3 +132,27 @@ class Grade(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.activity}: {self.student_grade}"
+
+
+class Section(models.Model):
+    YEAR_CHOICES = [(i, f'Year {i}') for i in range(1, 5)]
+    
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='sections')
+    year_level = models.IntegerField(choices=YEAR_CHOICES)
+    section_name = models.CharField(max_length=1)  # A, B, C, etc.
+    
+    class Meta:
+        unique_together = ('course', 'year_level', 'section_name')
+        ordering = ['course', 'year_level', 'section_name']
+
+    def __str__(self):
+        return f"{self.course.course_abv} {self.year_level}-{self.section_name}"
+
+    def is_full(self):
+        from .models import Student
+        current_count = Student.objects.filter(
+            course=self.course,
+            year_level=self.year_level,
+            section=self.section_name
+        ).count()
+        return current_count >= self.max_students

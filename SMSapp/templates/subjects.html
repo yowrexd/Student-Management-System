@@ -170,13 +170,21 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
-                                    <input type="number" class="w-full px-4 py-3 rounded-xl border-gray-200 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
-                                           id="year_level" name="year_level" min="1" required>
+                                    <select class="w-full px-4 py-3 rounded-xl border-gray-200 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                            id="year_level" name="year_level" onchange="loadSections()" required>
+                                        <option value="" disabled selected>Select Year</option>
+                                        <option value="1">1st Year</option>
+                                        <option value="2">2nd Year</option>
+                                        <option value="3">3rd Year</option>
+                                        <option value="4">4th Year</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Section</label>
-                                    <input type="text" class="w-full px-4 py-3 rounded-xl border-gray-200 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
-                                           id="section" name="section" required>
+                                    <select class="w-full px-4 py-3 rounded-xl border-gray-200 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                            id="section" name="section" required disabled>
+                                        <option value="" disabled selected>Select Section</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -266,13 +274,21 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
-                                    <input type="number" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
-                                           id="edit_year_level" name="year_level" min="1" required>
+                                    <select class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                            id="edit_year_level" name="year_level" onchange="loadSections()" required>
+                                        <option value="" disabled selected>Select Year</option>
+                                        <option value="1">1st Year</option>
+                                        <option value="2">2nd Year</option>
+                                        <option value="3">3rd Year</option>
+                                        <option value="4">4th Year</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Section</label>
-                                    <input type="text" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
-                                           id="edit_section" name="section" required>
+                                    <select class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#006837] focus:ring focus:ring-[#006837]/20 transition-all" 
+                                            id="edit_section" name="section" required disabled>
+                                        <option value="" disabled selected>Select Section</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -424,30 +440,47 @@ document.getElementById('subjectForm').addEventListener('submit', function(e) {
 
 // Add these functions back to your script section
 function editSubject(subjectCode) {
-    fetch(`/api/subjects/${subjectCode}/`, {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => {
-        if (!response.ok) throw new Error('Failed to fetch subject data');
-        return response.json();
-    })
+    fetch(`/api/subjects/${subjectCode}/`)
+    .then(response => response.json())
     .then(data => {
+        console.log('Edit subject data:', data); // Debug log
+        
         const form = document.getElementById('editSubjectForm');
-        form.querySelector('#edit_subject_code').value = data.subject_code;
+        form.querySelector('#edit_subject_code').value = subjectCode;
         form.querySelector('#edit_subject_title').value = data.subject_title;
-        form.querySelector('#edit_course').value = data.course || '';
+        form.querySelector('#edit_course').value = data.course;
         form.querySelector('#edit_school_year').value = data.school_year;
         form.querySelector('#edit_semester').value = data.semester;
         form.querySelector('#edit_year_level').value = data.year_level;
-        form.querySelector('#edit_section').value = data.section;
-
-        var editModal = new bootstrap.Modal(document.getElementById('editSubjectModal'));
+        
+        // Store current section
+        window.currentSection = data.section;
+        
+        // Load sections before showing modal
+        const courseSelect = document.getElementById('edit_course');
+        const yearSelect = document.getElementById('edit_year_level');
+        
+        courseSelect.value = data.course;
+        yearSelect.value = data.year_level;
+        
+        // Show modal first, then load sections
+        const editModal = new bootstrap.Modal(document.getElementById('editSubjectModal'));
         editModal.show();
+        
+        // Load sections after modal is shown
+        setTimeout(() => {
+            loadSections.call(yearSelect);
+            
+            // Set section value after sections are loaded
+            setTimeout(() => {
+                const sectionSelect = document.getElementById('edit_section');
+                sectionSelect.value = data.section;
+                sectionSelect.disabled = false;
+            }, 300);
+        }, 100);
     })
     .catch(error => {
-        console.error('Error:', error);
+        console.error('Error loading subject:', error);
         alert('Failed to load subject data');
     });
 }
@@ -565,5 +598,136 @@ function handleApiResponse(response, successMessage) {
         showToast(response.message || 'An error occurred', 'error');
     }
 }
+
+function loadAvailableSections() {
+    const courseId = document.getElementById('course').value;
+    const yearLevel = document.getElementById('year_level').value;
+    
+    if (!courseId || !yearLevel) {
+        return;
+    }
+    
+    fetch(`/api/sections/?course=${courseId}&year=${yearLevel}`)
+        .then(response => response.json())
+        .then(data => {
+            const sectionSelect = document.getElementById('section');
+            sectionSelect.innerHTML = '<option value="">Select Section</option>';
+            
+            if (data.status === 'success') {
+                data.data
+                    .filter(section => !section.is_full)
+                    .forEach(section => {
+                        sectionSelect.innerHTML += `
+                            <option value="${section.section_name}">
+                                Section ${section.section_name}
+                            </option>
+                        `;
+                    });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading sections:', error);
+            showToast('Failed to load sections', 'error');
+        });
+}
+
+function loadSections() {
+    const elementId = this.id || '';
+    const isEditForm = elementId.startsWith('edit_');
+    
+    // Get the correct elements
+    const courseSelect = document.getElementById(isEditForm ? 'edit_course' : 'course');
+    const yearSelect = document.getElementById(isEditForm ? 'edit_year_level' : 'year_level');
+    const sectionSelect = document.getElementById(isEditForm ? 'edit_section' : 'section');
+    
+    const course = courseSelect.value;
+    const year = yearSelect.value;
+    
+    if (!course || !year) {
+        sectionSelect.innerHTML = '<option value="" disabled selected>Select Section</option>';
+        sectionSelect.disabled = true;
+        return;
+    }
+
+    fetch(`/api/student-sections/?course=${course}&year_level=${year}`)  // Updated endpoint
+        .then(response => response.json())
+        .then(data => {
+            sectionSelect.innerHTML = '<option value="" disabled selected>Select Section</option>';
+            if (data.status === 'success' && data.data) {
+                data.data.forEach(section => {
+                    sectionSelect.innerHTML += `
+                        <option value="${section.section_name}">Section ${section.section_name}</option>
+                    `;
+                });
+                sectionSelect.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading sections:', error);
+            sectionSelect.disabled = true;
+        });
+}
+
+// Update edit function to handle sections properly
+function editSubject(subjectCode) {
+    fetch(`/api/subjects/${subjectCode}/`)
+    .then(response => response.json())
+    .then(data => {
+        console.log('Edit subject data:', data); // Debug log
+        
+        const form = document.getElementById('editSubjectForm');
+        form.querySelector('#edit_subject_code').value = subjectCode;
+        form.querySelector('#edit_subject_title').value = data.subject_title;
+        form.querySelector('#edit_course').value = data.course;
+        form.querySelector('#edit_school_year').value = data.school_year;
+        form.querySelector('#edit_semester').value = data.semester;
+        form.querySelector('#edit_year_level').value = data.year_level;
+        
+        // Store current section
+        window.currentSection = data.section;
+        
+        // Load sections before showing modal
+        const courseSelect = document.getElementById('edit_course');
+        const yearSelect = document.getElementById('edit_year_level');
+        
+        courseSelect.value = data.course;
+        yearSelect.value = data.year_level;
+        
+        // Show modal first, then load sections
+        const editModal = new bootstrap.Modal(document.getElementById('editSubjectModal'));
+        editModal.show();
+        
+        // Load sections after modal is shown
+        setTimeout(() => {
+            loadSections.call(yearSelect);
+            
+            // Set section value after sections are loaded
+            setTimeout(() => {
+                const sectionSelect = document.getElementById('edit_section');
+                sectionSelect.value = data.section;
+                sectionSelect.disabled = false;
+            }, 300);
+        }, 100);
+    })
+    .catch(error => {
+        console.error('Error loading subject:', error);
+        alert('Failed to load subject data');
+    });
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // For add form
+    document.getElementById('course').addEventListener('change', loadSections);
+    document.getElementById('year_level').addEventListener('change', loadSections);
+    
+    // For edit form
+    document.getElementById('edit_course').addEventListener('change', loadSections);
+    document.getElementById('edit_year_level').addEventListener('change', loadSections);
+    
+    // Initialize sections as disabled
+    document.getElementById('section').disabled = true;
+    document.getElementById('edit_section').disabled = true;
+});
 </script>
 {% endblock %}
