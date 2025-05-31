@@ -6,7 +6,6 @@
     <!-- Welcome Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-[#006837]">Dashboard</h1>
-        <p class="text-gray-600 mt-1">Welcome back {% comment %}{{ request.user.username }}{% endcomment %} </p>
     </div> 
 
     <!-- Primary Stats Grid -->
@@ -90,7 +89,7 @@
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Students per Course</h3>
             <div class="space-y-4">
                 {% for course in course_stats %}
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between gap-8">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-lg bg-[#006837]/10 flex items-center justify-center text-[#006837]">
                             <i class="fas fa-graduation-cap"></i>
@@ -101,8 +100,7 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="font-bold text-gray-800">{{ course.student_count }}</p>
-                        <p class="text-xs text-gray-500">Students</p>
+                        <p class="font-bold text-3xl text-gray-800">{{ course.student_count }}</p>
                     </div>
                 </div>
                 {% endfor %}
