@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Subject, Activity, StudentSubjectEnrollment, Student, Course, Grade, Section
 from datetime import date
+from django.db import transaction
 
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,11 +52,8 @@ class SubjectSerializer(serializers.ModelSerializer):
                  'semester', 'year_level', 'section', 'archive']
         read_only_fields = ['archive']
 
-    def validate_subject_code(self, value):
-        if not value:
-            raise serializers.ValidationError("Subject code is required")
-        return value.upper()  # Convert to uppercase    def validate(self, data):
-        # Check uniqueness for subject code during update
+    def validate(self, data):
+        # Only check for duplicate subject code if it's being changed
         if self.instance and 'subject_code' in data:
             new_code = data['subject_code'].upper()
             if new_code != self.instance.subject_code:
@@ -63,12 +61,21 @@ class SubjectSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({
                         'subject_code': 'Subject with this code already exists'
                     })
-            data['subject_code'] = new_code
-
+        
         # Validate year level
         if data.get('year_level') and (data['year_level'] < 1 or data['year_level'] > 4):
             raise serializers.ValidationError({"year_level": "Year level must be between 1 and 4"})
         return data
+
+    def update(self, instance, validated_data):
+        """Update existing subject without creating new one"""
+        try:
+            with transaction.atomic():
+                # Update the instance directly
+                instance.update_details(**validated_data)
+                return instance
+        except Exception as e:
+            raise serializers.ValidationError(str(e))
 
 class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
