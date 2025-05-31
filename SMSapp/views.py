@@ -21,26 +21,68 @@ from django.utils import timezone
 from django.db.models import Count, Q, OuterRef, Exists
 
 def index(request):
-    # Get counts for dashboard
+    # Summary statistics
     total_students = Student.objects.count()
     total_courses = Course.objects.count()
-    total_subjects = Subject.objects.count()
+    total_subjects = Subject.objects.filter(is_active=True).count()
+    archived_subjects = Subject.objects.filter(is_active=False).count()
+    
+    # Calculate new students this month
+    this_month = timezone.now().replace(day=1)
+    new_students = Student.objects.filter(date_added__gte=this_month).count()
 
-    # Count activities without grades (pending activities)
-    pending_activities = Activity.objects.exclude(
-        activity_id__in=Grade.objects.values('activity')
-    ).count()
+    # Course statistics with student counts
+    course_stats = Course.objects.annotate(
+        student_count=Count('student')
+    ).values('course_abv', 'course_name', 'student_count')
 
-    # Get recent activities without using date_assigned
-    recent_activities = Activity.objects.all().order_by('-activity_id')[:5]
+    # Year level distribution with percentages
+    total_count = Student.objects.count()
+    year_stats = Student.objects.values('year_level').annotate(
+        student_count=Count('student_id')
+    ).order_by('year_level')
+    
+    for year in year_stats:
+        year['percentage'] = (year['student_count'] / total_count * 100) if total_count > 0 else 0
+
+    # Activity type distribution
+    activity_stats = []
+    for activity_type in ['Quiz', 'Exam', 'Project', 'Activities']:
+        count = Activity.objects.filter(activity_type=activity_type).count()
+        pending = Activity.objects.filter(
+            activity_type=activity_type
+        ).exclude(
+            activity_id__in=Grade.objects.values('activity')
+        ).count()
+        
+        activity_stats.append({
+            'type': activity_type,
+            'count': count,
+            'pending': pending
+        })
+
+    # Recent activities with pending grades count
+    recent_activities = Activity.objects.select_related('subject').order_by('-activity_id')[:5]
+    for activity in recent_activities:
+        total_students = StudentSubjectEnrollment.objects.filter(subject=activity.subject).count()
+        graded_count = Grade.objects.filter(activity=activity).count()
+        activity.pending_count = total_students - graded_count
 
     context = {
         'total_students': total_students,
         'total_courses': total_courses,
         'total_subjects': total_subjects,
-        'pending_activities': pending_activities,
-        'new_students': Student.objects.count(),
-        'recent_students': Student.objects.all()[:5],
+        'archived_subjects': archived_subjects,
+        'new_students': new_students,
+        'pending_activities': Activity.objects.filter(
+            activity_id__in=StudentSubjectEnrollment.objects.values('subject__activity')
+        ).exclude(
+            activity_id__in=Grade.objects.values('activity')
+        ).count(),
+        'course_stats': course_stats,
+        'year_stats': year_stats,
+        'activity_stats': activity_stats,
+        'recent_students': Student.objects.select_related('course').order_by('-date_added')[:5],
         'recent_activities': recent_activities,
     }
     
