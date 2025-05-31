@@ -15,49 +15,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
 def index(request):
-    # Get summary counts
-    total_students = Student.objects.count()
-    total_subjects = Subject.objects.filter(archive=False).count()
-    total_courses = Course.objects.count()
-    total_activities = Activity.objects.count()
-
-    # Get recent enrollments
-    recent_enrollments = StudentSubjectEnrollment.objects.select_related(
-        'student', 'subject'
-    ).order_by('-id')[:5]
-
-    # Get course distribution
-    course_distribution = Student.objects.values(
-        'course__course_abv'
-    ).annotate(
-        count=models.Count('student_id')
-    ).order_by('-count')
-
-    # Get recent activities
-    recent_activities = Activity.objects.select_related(
-        'subject'
-    ).order_by('-date_assigned')[:5]
-
-    # Get subjects grouped by semester
-    subjects_by_semester = Subject.objects.filter(
-        archive=False
-    ).values(
-        'semester'
-    ).annotate(
-        count=models.Count('subject_code')
-    ).order_by('semester')
-
-    context = {
-        'total_students': total_students,
-        'total_subjects': total_subjects,
-        'total_courses': total_courses,
-        'total_activities': total_activities,
-        'recent_enrollments': recent_enrollments,
-        'course_distribution': course_distribution,
-        'recent_activities': recent_activities,
-        'subjects_by_semester': subjects_by_semester
-    }
-    return render(request, 'index.html', context)
+    return render(request, 'index.html')
 
 # default view for subjects
 def subjects(request):
