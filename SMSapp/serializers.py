@@ -1,12 +1,12 @@
 from rest_framework import serializers
-from .models import Subject, Activity, StudentSubjectEnrollment, Student, Course, Grade
+from .models import Subject, Activity, StudentSubjectEnrollment, Student, Course, Grade, Section
 from datetime import date
 
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ['student_id', 'last_name', 'first_name', 'middle_name', 
-                 'course', 'year_level', 'section']
+                 'course', 'year_level', 'section', 'status']
 
     def _get_course(self, course_data):
         if isinstance(course_data, str):
@@ -100,3 +100,13 @@ class GradeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Grade
         fields = ['grade_id', 'student', 'activity', 'student_grade']
+
+class SectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Section
+        fields = ['id', 'course', 'year_level', 'section_name']
+        
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['course'] = instance.course.course_abv
+        return data

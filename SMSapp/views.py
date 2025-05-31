@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
-from .models import Subject, Activity, Grade, Student, Course
+from .models import Subject, Activity, Grade, Student, Course, Section
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -10,7 +10,7 @@ from django.db import models  # Add this import
 from .models import Subject, Activity, StudentSubjectEnrollment, Course, Student, Grade
 from .serializers import (
     SubjectSerializer, ActivitySerializer, 
-    StudentSubjectEnrollmentSerializer, CourseSerializer, StudentSerializer, GradeSerializer
+    StudentSubjectEnrollmentSerializer, CourseSerializer, StudentSerializer,SectionSerializer, GradeSerializer
 )
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
@@ -101,19 +101,28 @@ def subjects(request):
 # view for subject details including activities and enrolled students
 def subject_info(request, subject_code):
     subject = get_object_or_404(Subject, subject_code=subject_code)
-    activities = Activity.objects.filter(subject=subject)
+    enrollments = StudentSubjectEnrollment.objects.filter(student__course__subject=subject)
+    enrolled_count = enrollments.count()
     
-    # Count activities that have no grades
-    pending_activities = activities.exclude(
-        activity_id__in=Grade.objects.values('activity')
-    ).count()
+    # Get all activities with their grading status
+    activities = Activity.objects.filter(subject=subject).annotate(
+        graded_count=Count('grade'),
+        is_pending=models.Case(
+            models.When(graded_count__lt=enrolled_count, then=True),
+            default=False,
+            output_field=models.BooleanField(),
+        )
+    )
+
+    # Count pending activities
+    pending_activities = activities.filter(is_pending=True).count()
 
     context = {
         'subject': subject,
         'activities': activities,
+        'enrolled_students': enrollments,
         'pending_activities': pending_activities,
-        'student_courses': Course.objects.all(),
-        'student_sections': list(set(Student.objects.values_list('section', flat=True)))
+        'total_students': enrolled_count,
     }
     
     return render(request, 'subjectinfo.html', context)
@@ -350,33 +359,57 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def bulk_enroll(self, request):
         try:
+            print("Received enrollment data:", request.data)  # Debug log
             subject_code = request.data.get('subject_code')
             student_ids = request.data.get('student_ids', [])
             
+            if not subject_code:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Subject code is required'
+                }, status=400)
+                
+            if not student_ids:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'No students selected for enrollment'
+                }, status=400)
+
             subject = Subject.objects.get(subject_code=subject_code)
+            enrolled_count = 0
             
-            # Create enrollments for each student
             for student_id in student_ids:
-                # Skip if already enrolled
-                if not StudentSubjectEnrollment.objects.filter(
-                    subject=subject,
-                    student_id=student_id
-                ).exists():
-                    StudentSubjectEnrollment.objects.create(
+                try:
+                    # Check if student exists
+                    student = Student.objects.get(student_id=student_id)
+                    
+                    # Skip if already enrolled
+                    if not StudentSubjectEnrollment.objects.filter(
                         subject=subject,
-                        student_id=student_id
-                    )
+                        student=student
+                    ).exists():
+                        StudentSubjectEnrollment.objects.create(
+                            subject=subject,
+                            student=student
+                        )
+                        enrolled_count += 1
+                except Student.DoesNotExist:
+                    print(f"Student {student_id} not found")  # Debug log
+                    continue
             
+            print(f"Successfully enrolled {enrolled_count} students")  # Debug log
             return JsonResponse({
                 'status': 'success',
-                'message': 'Students enrolled successfully'
+                'message': f'Successfully enrolled {enrolled_count} students'
             })
+            
         except Subject.DoesNotExist:
             return JsonResponse({
                 'status': 'error',
                 'message': 'Subject not found'
             }, status=404)
         except Exception as e:
+            print(f"Error in bulk_enroll: {str(e)}")  # Debug log
             return JsonResponse({
                 'status': 'error',
                 'message': str(e)
@@ -464,6 +497,25 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({'status': 'success'})
         except Exception as e:
             return Response({'status': 'error', 'message': str(e)}, status=400)
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response({
+                'status': 'success',
+                'data': serializer.data
+            })
+        except Course.DoesNotExist:
+            return Response({
+                'status': 'error',
+                'message': 'Course not found'
+            }, status=404)
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
 
 class StudentViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
@@ -624,7 +676,13 @@ class StudentDetailAPIView(APIView):
         })
 
 def courses(request):
-    return render(request, 'courses.html', {'courses': Course.objects.all()})
+    courses = Course.objects.all()
+    sections = Section.objects.select_related('course').all()
+    context = {
+        'courses': courses,
+        'sections': sections,
+    }
+    return render(request, 'courses.html', context)
 
 def students(request):
     students = Student.objects.all().select_related('course')
@@ -779,3 +837,279 @@ def unarchive_subject(request, subject_code):
 def archived_subjects(request):
     subjects = Subject.objects.filter(is_active=False)
     return render(request, 'archived_subjects.html', {'subjects': subjects})
+
+@api_view(['GET'])
+def get_available_students(request, subject_code):
+    """Get students who match the subject's year and section"""
+    try:
+        subject = get_object_or_404(Subject, subject_code=subject_code)
+        print(f"Found subject: {subject.subject_code}")  # Debug log
+        
+        enrolled_student_ids = StudentSubjectEnrollment.objects.filter(
+            subject=subject
+        ).values_list('student__student_id', flat=True)
+        
+        # Create a Q object for the filter conditions
+        regular_students = Q(
+            year_level=subject.year_level,
+            section=subject.section,
+            course=subject.course,
+            status='R'  # Regular students
+        )
+        
+        # Include all irregular students
+        irregular_students = Q(status='I')  # Irregular students
+        
+        # Combine the conditions with OR operator
+        available_students = Student.objects.filter(
+            regular_students | irregular_students
+        ).exclude(
+            student_id__in=enrolled_student_ids
+        ).select_related('course')
+        
+        print(f"Found {available_students.count()} available students")  # Debug log
+        
+        students_list = []
+        for student in available_students:
+            students_list.append({
+                'student_id': student.student_id,
+                'first_name': student.first_name,
+                'last_name': student.last_name,
+                'middle_name': student.middle_name,
+                'year_level': student.year_level,
+                'section': student.section,
+                'course': student.course.course_abv,
+                'status': student.status  # Add status to display
+            })
+        
+        return Response({
+            'status': 'success',
+            'data': students_list
+        }, status=200)
+        
+    except Exception as e:
+        print(f"Error: {str(e)}")  # Debug log
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+@require_http_methods(["GET"])
+def get_enrolled_students(request):
+    """Get students enrolled in a specific subject"""
+    subject_code = request.GET.get('subject')
+    if not subject_code:
+        return JsonResponse({'status': 'error', 'message': 'Subject code is required'})
+    
+    enrollments = Enrollment.objects.filter(
+        subject__subject_code=subject_code
+    ).select_related('student', 'student__course')
+    
+    enrolled_students = []
+    for enrollment in enrollments:
+        student = enrollment.student
+        enrolled_students.append({
+            'student': {
+                'student_id': student.student_id,
+                'first_name': student.first_name,
+                'last_name': student.last_name,
+                'middle_name': student.middle_name,
+                'year_level': student.year_level,
+                'section': student.section,
+                'course': {
+                    'course_abv': student.course.course_abv
+                }
+            }
+        })
+    
+    return JsonResponse(enrolled_students, safe=False)
+
+@require_http_methods(["GET"])
+def get_available_sections(request):
+    course_id = request.GET.get('course')
+    year_level = request.GET.get('year')
+    
+    sections = Section.objects.all()
+    if course_id:
+        sections = sections.filter(course_id=course_id)
+    if year_level:
+        sections = sections.filter(year_level=year_level)
+    
+    data = [{
+        'id': section.id,
+        'year_level': section.year_level,
+        'section_name': section.section_name,
+        'course': section.course.course_abv,
+        'is_full': section.is_full()
+    } for section in sections]
+    
+    return JsonResponse({'status': 'success', 'data': data})
+
+@require_http_methods(["POST"])
+def create_section(request):
+    data = json.loads(request.body)
+    try:
+        section = Section.objects.create(
+            year_level=data['year_level'],
+            section_name=data['section_name'],
+            course_id=data['course'],
+            max_students=data.get('max_students', 40)
+        )
+        return JsonResponse({
+            'status': 'success',
+            'data': {
+                'id': section.id,
+                'year_level': section.year_level,
+                'section_name': section.section_name
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+@require_http_methods(["GET"])
+def get_sections(request):
+    course = request.GET.get('course')
+    year_level = request.GET.get('year')
+    
+    query = Section.objects.all()
+    if course:
+        query = query.filter(course__course_abv=course)
+    if year_level:
+        query = query.filter(year_level=year_level)
+        
+    sections = [{
+        'id': section.id,
+        'name': section.section_name,
+        'year_level': section.year_level,
+        'course': section.course.course_abv
+    } for section in query]
+    
+    return JsonResponse({'status': 'success', 'data': sections})
+
+@require_http_methods(["POST"])
+def add_section(request):
+    data = json.loads(request.body)
+    try:
+        course = Course.objects.get(course_abv=data['course'])
+        section = Section.objects.create(
+            course=course,
+            year_level=data['year_level'],
+            section_name=data['section_name']
+        )
+        return JsonResponse({
+            'status': 'success',
+            'data': {
+                'id': section.id,
+                'name': section.section_name
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+class SectionViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
+    queryset = Section.objects.all()
+    serializer_class = SectionSerializer
+    lookup_field = 'id'  # Add this line to fix editing
+
+    def create(self, request, *args, **kwargs):
+        try:
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid():
+                self.perform_create(serializer)
+                return Response({
+                    'status': 'success',
+                    'data': serializer.data,
+                    'message': 'Section created successfully'
+                })
+            return Response({
+                'status': 'error',
+                'message': serializer.errors
+            }, status=400)
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            if serializer.is_valid():
+                self.perform_update(serializer)
+                return Response({
+                    'status': 'success',
+                    'data': serializer.data,
+                    'message': 'Section updated successfully'
+                })
+            return Response({
+                'status': 'error',
+                'message': serializer.errors
+            }, status=400)
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            self.perform_destroy(instance)
+            return Response({
+                'status': 'success',
+                'message': 'Section deleted successfully'
+            })
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response({
+                'status': 'success',
+                'data': serializer.data
+            })
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=404)
+
+    def get_queryset(self):
+        queryset = Section.objects.all()
+        course = self.request.query_params.get('course', None)
+        year_level = self.request.query_params.get('year_level', None)
+
+        if course:
+            queryset = queryset.filter(course__course_abv=course)
+        if year_level:
+            queryset = queryset.filter(year_level=year_level)
+        
+        return queryset.select_related('course')
+
+@api_view(['GET'])
+def get_student_sections(request):
+    course = request.GET.get('course')
+    year_level = request.GET.get('year_level')
+    
+    if not course or not year_level:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Course and year level are required'
+        })
+    
+    sections = Section.objects.filter(
+        course__course_abv=course,
+        year_level=year_level
+    ).values('section_name')
+    
+    return JsonResponse({
+        'status': 'success',
+        'data': list(sections)
+    })
