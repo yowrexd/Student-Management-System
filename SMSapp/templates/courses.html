@@ -497,6 +497,7 @@ function deleteSection(sectionId) {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
+                location.href = window.location.pathname + '#sections';
                 location.reload();
             } else {
                 showToast(data.message || 'Failed to delete section', 'error');
@@ -690,6 +691,13 @@ function toggleDropdown(button) {
 // Add click handler to prevent closing when clicking inside dropdown
 document.querySelectorAll('.dropdown-menu').forEach(menu => {
     menu.addEventListener('click', (e) => e.stopPropagation());
+});
+
+window.addEventListener('load', function() {
+    if (window.location.hash === '#sections') {
+        switchTab('sections');
+        window.location.hash = '';
+    }
 });
 </script>
 
