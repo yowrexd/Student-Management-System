@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction  # Add transaction here
 from django.utils import timezone
 import datetime
 
@@ -85,6 +85,45 @@ class Subject(models.Model):
 
     def __str__(self):
         return f"{self.subject_code} - {self.subject_title}"
+
+    def update_subject_code(self, new_code):
+        """Update subject code safely"""
+        if new_code != self.subject_code:
+            self.subject_code = new_code
+        self.save()
+        return self
+
+    def save(self, *args, **kwargs):
+        # Ensure code is uppercase but don't modify any other fields
+        if self.subject_code:
+            self.subject_code = self.subject_code.upper()
+        super().save(*args, **kwargs)
+
+    def update_details(self, **data):
+        """Safe update that doesn't create duplicates"""
+        with transaction.atomic():
+            original_code = self.subject_code
+            
+            # First update all non-code fields
+            for key, value in data.items():
+                if key != 'subject_code':
+                    setattr(self, key, value)
+            
+            # Handle subject code change if needed
+            new_code = data.get('subject_code')
+            if new_code and new_code.upper() != original_code:
+                # Use raw SQL to update the primary key directly
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE SMSapp_subject SET subject_code = %s WHERE subject_code = %s",
+                        [new_code.upper(), original_code]
+                    )
+                self.subject_code = new_code.upper()
+            else:
+                self.save()
+            
+        return self
 
 
 class StudentSubjectEnrollment(models.Model):

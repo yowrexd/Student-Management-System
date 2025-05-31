@@ -1,6 +1,8 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
+from django.db import models, transaction  # Add transaction here
+
 from .models import Subject, Activity, Grade, Student, Course, Section
 
 from rest_framework import viewsets, status
@@ -195,24 +197,29 @@ class SubjectViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             data = request.data.copy()
             
-            # Ensure numeric fields are integers
+            # Convert numeric fields
             for field in ['year_level', 'semester']:
                 if field in data:
                     data[field] = int(data[field])
-
-            serializer = self.get_serializer(instance, data=data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
+            
+            with transaction.atomic():
+                # Update directly on the instance
+                serializer = self.get_serializer(instance, data=data, partial=True)
+                if serializer.is_valid():
+                    updated_instance = serializer.save()
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'Subject updated successfully',
+                        'data': self.get_serializer(updated_instance).data
+                    })
+                
                 return JsonResponse({
-                    'status': 'success',
-                    'message': 'Subject updated successfully',
-                    'data': serializer.data
-                })
-            return JsonResponse({
-                'status': 'error',
-                'message': serializer.errors
-            }, status=400)
+                    'status': 'error',
+                    'message': serializer.errors
+                }, status=400)
+                
         except Exception as e:
+            print(f"Error updating subject: {str(e)}")
             return JsonResponse({
                 'status': 'error',
                 'message': str(e)
