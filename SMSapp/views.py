@@ -714,13 +714,10 @@ class GradeViewSet(viewsets.ModelViewSet):
     serializer_class = GradeSerializer
 
     @action(detail=False, methods=['post'])
-    def save_grades(self, request):
+    def save_grades(self, request, activity_id=None):
         try:
-            activity_id = request.data.get('activity_id')
             grades_data = request.data.get('grades', [])
-
-            # Validate activity exists
-            activity = Activity.objects.get(activity_id=activity_id)
+            activity = get_object_or_404(Activity, activity_id=activity_id)
             
             for grade_item in grades_data:
                 student_id = grade_item['student_id']
@@ -732,17 +729,17 @@ class GradeViewSet(viewsets.ModelViewSet):
                     defaults={'student_grade': grade_value}
                 )
 
-            return JsonResponse({'status': 'success'})
+            return Response({'status': 'success'}, status=status.HTTP_200_OK)
         except Activity.DoesNotExist:
-            return JsonResponse({
+            return Response({
                 'status': 'error',
                 'message': 'Activity not found'
-            }, status=404)
+            }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return JsonResponse({
+            return Response({
                 'status': 'error',
                 'message': str(e)
-            }, status=400)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'POST', 'PUT', 'DELETE'])
 def activities_api(request, activity_id=None):

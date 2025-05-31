@@ -630,7 +630,7 @@ function loadStudents() {
                             : '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Regular</span>';
                             
                         const row = `
-                            <tr class="student-row hover:bg-gray-50">
+                            <tr class="student-row hover:bg-gray-50 cursor-pointer">
                                 <td class="px-6 py-4">
                                     <input type="checkbox" class="student-checkbox rounded border-gray-300" 
                                            value="${student.student_id}">
@@ -645,28 +645,55 @@ function loadStudents() {
                         `;
                         tbody.innerHTML += row;
                     });
+
+                    // Add click handlers to rows after adding them
+                    document.querySelectorAll('.student-row').forEach(row => {
+                        row.addEventListener('click', (e) => {
+                            if (!e.target.classList.contains('student-checkbox')) {
+                                const checkbox = row.querySelector('.student-checkbox');
+                                checkbox.checked = !checkbox.checked;
+                                updateSelectAllState();
+                            }
+                        });
+                    });
                 } else {
                     tbody.innerHTML = `
-                        <tr>
-                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                                No available students found
-                            </td>
-                        </tr>
+                        <tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No available students found</td></tr>
                     `;
                 }
+                updateSelectAllState();
             }
         })
         .catch(error => {
             console.error('Error:', error);
             tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="px-6 py-4 text-center text-red-500">
-                        Failed to load students. Please try again.
-                    </td>
-                </tr>
+                <tr><td colspan="7" class="px-6 py-4 text-center text-red-500">Failed to load students</td></tr>
             `;
         });
 }
+
+function updateSelectAllState() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const visibleCheckboxes = document.querySelectorAll('.student-row:not([style*="display: none"]) .student-checkbox');
+    const checkedVisibleCheckboxes = document.querySelectorAll('.student-row:not([style*="display: none"]) .student-checkbox:checked');
+    
+    selectAllCheckbox.checked = visibleCheckboxes.length > 0 && visibleCheckboxes.length === checkedVisibleCheckboxes.length;
+    selectAllCheckbox.indeterminate = checkedVisibleCheckboxes.length > 0 && checkedVisibleCheckboxes.length < visibleCheckboxes.length;
+}
+
+// Update select all handler
+document.getElementById('selectAll').addEventListener('change', function() {
+    const isChecked = this.checked;
+    document.querySelectorAll('.student-row:not([style*="display: none"]) .student-checkbox').forEach(checkbox => {
+        checkbox.checked = isChecked;
+    });
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('student-checkbox')) {
+        updateSelectAllState();
+    }
+});
 
 function reloadEnrolledStudents() {
     const subjectCode = '{{ subject.subject_code }}';
@@ -931,18 +958,43 @@ function filterStudents() {
             
         row.style.display = matchesSearch && matchesCourse && matchesYear && matchesSection ? '' : 'none';
     });
+    
+    updateSelectAllState();
 }
 
 // Select All functionality
 document.getElementById('selectAll').addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('.student-checkbox');
+    const checkboxes = document.querySelectorAll('.student-row:not([style*="display: none"]) .student-checkbox');
     checkboxes.forEach(checkbox => {
-        const row = checkbox.closest('tr');
-        if (row.style.display !== 'none') {  // Only check visible rows
-            checkbox.checked = this.checked;
-        }
+        checkbox.checked = this.checked;
     });
 });
+
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('student-checkbox')) {
+        updateSelectAllState();
+    }
+});
+
+function updateSelectAllState() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const visibleCheckboxes = document.querySelectorAll('.student-row:not([style*="display: none"]) .student-checkbox');
+    const checkedVisibleCheckboxes = document.querySelectorAll('.student-row:not([style*="display: none"]) .student-checkbox:checked');
+    
+    if (visibleCheckboxes.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (checkedVisibleCheckboxes.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (checkedVisibleCheckboxes.length === visibleCheckboxes.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    }
+}
 
 function loadSections() {
     const courseId = document.getElementById('course').value;
