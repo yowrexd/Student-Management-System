@@ -136,7 +136,7 @@
 <body>
     {% csrf_token %}
     <!-- Toast Notification Component -->
-    <div id="toast-notification" class="fixed top-4 right-4 z-50 transform transition-transform duration-300 translate-x-full">
+    <div id="toast-notification" class="fixed top-4 right-4 z-50 transform transition-transform duration-300 translate-x-full opacity-0 invisible">
         <div class="flex items-center p-4 min-w-[300px] bg-white border-l-4 rounded-lg shadow-lg">
             <div id="toast-icon" class="mr-3 text-xl"></div>
             <div class="flex-1">
@@ -271,7 +271,7 @@
             }
             
             toastMessage.textContent = message;
-            toast.classList.remove('translate-x-full');
+            toast.classList.remove('translate-x-full', 'opacity-0', 'invisible');
             
             // Auto hide after 3 seconds
             setTimeout(() => hideToast(), 3000);
@@ -279,7 +279,10 @@
 
         function hideToast() {
             const toast = document.getElementById('toast-notification');
-            toast.classList.add('translate-x-full');
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('invisible');
+            }, 300); // Wait for transition to complete
         }
 
         // Global fetch error handler
