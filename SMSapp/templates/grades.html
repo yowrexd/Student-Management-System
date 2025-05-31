@@ -144,19 +144,27 @@ document.getElementById('saveGrades').addEventListener('click', function() {
 
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    fetch('/api/grades/save_grades/', {
+    fetch(`/api/activities/${encodeURIComponent('{{ activity.activity_id }}')}/grades/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': csrfToken
         },
         body: JSON.stringify({
-            activity_id: '{{ activity.activity_id }}',
             grades: grades
         }),
         credentials: 'include'
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        }
+        throw new Error('Server response was not JSON');
+    })
     .then(data => {
         if (data.status === 'success') {
             alert('Grades saved successfully!');
@@ -168,7 +176,7 @@ document.getElementById('saveGrades').addEventListener('click', function() {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert(error.message || 'Failed to save grades');
+        alert('Failed to save grades: ' + error.message);
     });
 });
 

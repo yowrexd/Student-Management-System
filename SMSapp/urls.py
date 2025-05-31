@@ -21,6 +21,9 @@ urlpatterns = [
     path('students/<str:student_id>/subjects/<str:subject_code>/', views.student_subject_info, name='student_subject_info'),
     path('courses/', views.courses, name='courses'),
     path('activities/<int:activity_id>/grades/', views.grades, name='grades'),
+    path('api/activities/<int:activity_id>/grades/', views.GradeViewSet.as_view({
+        'post': 'save_grades',
+    }), name='save_grades'),
     path('archived-subjects/', views.archived_subjects, name='archived_subjects'),
     path('api/subjects/<str:subject_code>/archive/', views.archive_subject, name='archive_subject'),
     path('api/subjects/<str:subject_code>/', views.delete_subject, name='delete_subject'),

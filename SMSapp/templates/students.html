@@ -495,11 +495,24 @@ function deleteStudent(studentId) {
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
             }
         })
-        .then(response => response.json())
-        .then(data => handleApiResponse(data, 'Student deleted successfully!'))
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Student not found. The page will be refreshed.');
+                }
+                throw new Error('Failed to delete student');
+            }
+            return response.json();
+        })
+        .then(data => {
+            handleApiResponse(data, 'Student deleted successfully!');
+        })
         .catch(error => {
             console.error('Error:', error);
-            showToast('Failed to delete student', 'error');
+            showToast(error.message, 'error');
+            if (error.message.includes('not found')) {
+                setTimeout(() => location.reload(), 1500);
+            }
         });
     }
 }
