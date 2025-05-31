@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block content %}
+{% csrf_token %}
 <div class="p-6 min-h-screen">
     <div class="flex justify-between items-center mb-8">
         <div>
@@ -32,7 +33,7 @@
                             class="w-full text-left px-4 py-3 hover:bg-green-50 text-gray-700 flex items-center gap-2 rounded-t-xl">
                         <i class="fas fa-edit text-[#006837]"></i> Edit
                     </button>
-                    <button onclick="event.stopPropagation(); /* archiveSubject('{{ subject.subject_code }}') */" 
+                    <button onclick="event.stopPropagation(); archiveSubject('{{ subject.subject_code }}')" 
                             class="w-full text-left px-4 py-3 hover:bg-yellow-50 text-gray-700 flex items-center gap-2">
                         <i class="fas fa-archive text-yellow-600"></i> Archive
                     </button>
@@ -86,8 +87,8 @@
                                 <i class="fas fa-users"></i>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-500">Section</p>
-                                <p class="font-medium text-gray-700">Year {{ subject.year_level }} - {{ subject.section }}</p>
+                                <p class="text-xs text-gray-500">Year & Section</p>
+                                <p class="font-medium text-gray-700"> {{ subject.year_level }} - {{ subject.section }}</p>
                             </div>
                         </div>
                     </div>
@@ -532,5 +533,37 @@ function toggleDropdown(button) {
 document.querySelectorAll('.dropdown-menu').forEach(menu => {
     menu.addEventListener('click', (e) => e.stopPropagation());
 });
+
+function archiveSubject(subjectCode) {
+    if (confirm('Are you sure you want to archive this subject?')) {
+        fetch(`/api/subjects/${subjectCode}/archive/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                throw new Error(data.message || 'Failed to archive subject');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert(error.message || 'Failed to archive subject');
+        });
+    }
+}
+
+function handleApiResponse(response, successMessage) {
+    if (response.status === 'success') {
+        showToast(successMessage, 'success');
+        setTimeout(() => location.reload(), 1500);
+    } else {
+        showToast(response.message || 'An error occurred', 'error');
+    }
+}
 </script>
 {% endblock %}

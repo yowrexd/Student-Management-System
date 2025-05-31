@@ -71,12 +71,9 @@ class SubjectSerializer(serializers.ModelSerializer):
         return data
 
 class ActivitySerializer(serializers.ModelSerializer):
-    date_assigned = serializers.DateField(default=date.today, read_only=True)
-    
     class Meta:
         model = Activity
-        fields = ['activity_id', 'subject', 'activity_type', 'activity_name', 'total_items', 'date_assigned']
-        read_only_fields = ['activity_id', 'date_assigned']
+        fields = ['activity_id', 'subject', 'activity_type', 'activity_name', 'total_items']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -85,7 +82,6 @@ class ActivitySerializer(serializers.ModelSerializer):
         data['activity_type'] = instance.activity_type
         data['activity_name'] = instance.activity_name
         data['total_items'] = instance.total_items
-        data['date_assigned'] = instance.date_assigned.strftime('%Y-%m-%d')
         return data
 
 class StudentSubjectEnrollmentSerializer(serializers.ModelSerializer):
