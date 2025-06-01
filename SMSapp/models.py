@@ -1,6 +1,8 @@
 from django.db import models, transaction  # Add transaction here
 from django.utils import timezone
 import datetime
+from django.core.exceptions import ValidationError  # Import ValidationError
+
 
 class Course(models.Model):
     course_abv = models.CharField(max_length=10, primary_key=True)
@@ -178,11 +180,16 @@ class Section(models.Model):
     
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='sections')
     year_level = models.IntegerField(choices=YEAR_CHOICES)
-    section_name = models.CharField(max_length=1)  # A, B, C, etc.
+    section_name = models.CharField(max_length=50)  # Changed from max_length=1
+    max_students = models.IntegerField(default=40)
     
     class Meta:
         unique_together = ('course', 'year_level', 'section_name')
         ordering = ['course', 'year_level', 'section_name']
+
+    def save(self, *args, **kwargs):
+        self.section_name = self.section_name.upper()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.course.course_abv} {self.year_level}-{self.section_name}"
@@ -195,3 +202,12 @@ class Section(models.Model):
             section=self.section_name
         ).count()
         return current_count >= self.max_students
+
+    def validate_unique(self, exclude=None):
+        if Section.objects.exclude(id=self.id).filter(
+            course=self.course,
+            year_level=self.year_level,
+            section_name=self.section_name
+        ).exists():
+            raise ValidationError('Section already exists for this course and year level')
+        super().validate_unique(exclude)

@@ -456,41 +456,64 @@ class CourseViewSet(viewsets.ModelViewSet):
     lookup_field = 'course_abv'
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            self.perform_create(serializer)
-            return Response({'status': 'success', 'data': serializer.data})
-        return Response({'status': 'error', 'message': serializer.errors}, status=400)
+        try:
+            print(f"Creating course with data:", request.data)  # Debug log
+            
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid():
+                self.perform_create(serializer)
+                return Response({
+                    'status': 'success',
+                    'message': 'Course created successfully',
+                    'data': serializer.data
+                })
+            
+            print(f"Validation errors:", serializer.errors)  # Debug log
+            return Response({
+                'status': 'error',
+                'message': serializer.errors
+            }, status=400)
+            
+        except Exception as e:
+            print(f"Error creating course: {str(e)}")  # Debug log
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
 
     def update(self, request, *args, **kwargs):
         try:
             old_course = self.get_object()
             new_data = request.data
             
-            # If the course code is changing, we need to handle related records
-            if new_data['course_abv'] != old_course.course_abv:
-                # Update all related records to point to the new course code
-                Student.objects.filter(course=old_course).update(course=new_data['course_abv'])
-                Subject.objects.filter(course=old_course).update(course=new_data['course_abv'])
+            with transaction.atomic():
+                # If the course code is changing, we need to handle related records
+                if new_data['course_abv'] != old_course.course_abv:
+                    # Create new course first
+                    new_course = Course.objects.create(
+                        course_abv=new_data['course_abv'],
+                        course_name=new_data['course_name']
+                    )
+                    
+                    # Update all related records to point to the new course
+                    Student.objects.filter(course=old_course).update(course=new_course)
+                    Subject.objects.filter(course=old_course).update(course=new_course)
+                    Section.objects.filter(course=old_course).update(course=new_course)
+                    
+                    # Delete old course after moving all relations
+                    old_course.delete()
+                    serializer = self.get_serializer(new_course)
+                else:
+                    # If only the name is changing, use normal update
+                    serializer = self.get_serializer(old_course, data=new_data)
+                    if serializer.is_valid():
+                        serializer.save()
                 
-                # Delete the old course and create a new one
-                old_course.delete()
-                new_course = Course.objects.create(
-                    course_abv=new_data['course_abv'],
-                    course_name=new_data['course_name']
-                )
-                serializer = self.get_serializer(new_course)
-            else:
-                # If only the name is changing, use normal update
-                serializer = self.get_serializer(old_course, data=new_data)
-                if serializer.is_valid():
-                    serializer.save()
-            
-            return Response({
-                'status': 'success',
-                'data': serializer.data,
-                'message': 'Course updated successfully'
-            })
+                return Response({
+                    'status': 'success',
+                    'data': serializer.data,
+                    'message': 'Course updated successfully'
+                })
         except Exception as e:
             return Response({
                 'status': 'error',
@@ -1014,23 +1037,44 @@ class SectionViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     queryset = Section.objects.all()
     serializer_class = SectionSerializer
-    lookup_field = 'id'  # Add this line to fix editing
+    lookup_field = 'id'
 
     def create(self, request, *args, **kwargs):
         try:
-            serializer = self.get_serializer(data=request.data)
+            data = {
+                'course': request.data.get('course'),
+                'year_level': request.data.get('year_level'),
+                'section_name': request.data.get('section_name', '').upper()
+            }
+            
+            # Validate data presence
+            if not all(data.values()):
+                return Response({
+                    'status': 'error',
+                    'message': 'All fields are required'
+                }, status=400)
+
+            print(f"Creating section with data:", data)  # Debug log
+            serializer = self.get_serializer(data=data)
+            
             if serializer.is_valid():
-                self.perform_create(serializer)
+                section = serializer.save()
                 return Response({
                     'status': 'success',
-                    'data': serializer.data,
+                    'data': self.get_serializer(section).data,
                     'message': 'Section created successfully'
                 })
+            
+            print(f"Validation errors:", serializer.errors)  # Debug log
             return Response({
                 'status': 'error',
                 'message': serializer.errors
             }, status=400)
+
         except Exception as e:
+            print(f"Error creating section: {str(e)}")  # Debug log
+            import traceback
+            traceback.print_exc()
             return Response({
                 'status': 'error',
                 'message': str(e)
@@ -1039,19 +1083,36 @@ class SectionViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            
+            # Prepare the data
+            data = {
+                'course': request.data.get('course'),
+                'year_level': request.data.get('year_level'),
+                'section_name': request.data.get('section_name', '').upper()
+            }
+            
+            # Remove None values
+            data = {k: v for k, v in data.items() if v is not None}
+
+            print(f"Updating section {instance.id} with data:", data)  # Debug log
+            
+            serializer = self.get_serializer(instance, data=data, partial=True)
             if serializer.is_valid():
-                self.perform_update(serializer)
+                updated_instance = serializer.save()
                 return Response({
                     'status': 'success',
-                    'data': serializer.data,
+                    'data': self.get_serializer(updated_instance).data,
                     'message': 'Section updated successfully'
                 })
+            
+            print(f"Validation errors:", serializer.errors)  # Debug log
             return Response({
                 'status': 'error',
                 'message': serializer.errors
             }, status=400)
+            
         except Exception as e:
+            print(f"Error updating section: {str(e)}")  # Debug log
             return Response({
                 'status': 'error',
                 'message': str(e)

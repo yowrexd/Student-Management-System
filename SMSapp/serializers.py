@@ -103,6 +103,32 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = ['course_abv', 'course_name']
 
+    def validate(self, data):
+        # Convert course_abv to uppercase
+        if 'course_abv' in data:
+            data['course_abv'] = data['course_abv'].strip().upper()
+            
+        # Validate course_abv format (alphanumeric)
+        if not data['course_abv'].replace('-', '').isalnum():
+            raise serializers.ValidationError({
+                'course_abv': 'Course code must contain only letters, numbers, and hyphens'
+            })
+
+        # Check for duplicates
+        if Course.objects.filter(course_abv=data['course_abv']).exists():
+            if not self.instance or self.instance.course_abv != data['course_abv']:
+                raise serializers.ValidationError({
+                    'course_abv': 'A course with this code already exists'
+                })
+
+        return data
+
+    def create(self, validated_data):
+        try:
+            return super().create(validated_data)
+        except Exception as e:
+            raise serializers.ValidationError(str(e))
+
 class GradeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Grade
@@ -112,8 +138,66 @@ class SectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Section
         fields = ['id', 'course', 'year_level', 'section_name']
-        
+
+    def validate(self, data):
+        try:
+            # Handle course value if it's a string
+            if isinstance(data.get('course'), str):
+                try:
+                    data['course'] = Course.objects.get(course_abv=data['course'])
+                except Course.DoesNotExist:
+                    raise serializers.ValidationError({'course': 'Invalid course code'})
+
+            # Validate year_level
+            if 'year_level' in data:
+                try:
+                    year_level = int(data['year_level'])
+                    if not 1 <= year_level <= 4:
+                        raise serializers.ValidationError({'year_level': 'Year level must be between 1 and 4'})
+                    data['year_level'] = year_level
+                except (ValueError, TypeError):
+                    raise serializers.ValidationError({'year_level': 'Invalid year level format'})
+
+            # Validate section_name - allow alphanumeric characters
+            if 'section_name' in data:
+                section_name = data['section_name'].strip().upper()
+                if not section_name:
+                    raise serializers.ValidationError({'section_name': 'Section name cannot be empty'})
+                if not section_name.replace('-', '').replace('_', '').isalnum():
+                    raise serializers.ValidationError({'section_name': 'Section name must contain only letters, numbers, hyphens and underscores'})
+                data['section_name'] = section_name
+
+            # Check for duplicates
+            existing = Section.objects.filter(
+                course=data.get('course', self.instance.course if self.instance else None),
+                year_level=data.get('year_level', self.instance.year_level if self.instance else None),
+                section_name=data.get('section_name', self.instance.section_name if self.instance else None)
+            )
+            if self.instance:
+                existing = existing.exclude(id=self.instance.id)
+            if existing.exists():
+                raise serializers.ValidationError('A section with these details already exists')
+
+            return data
+            
+        except serializers.ValidationError:
+            raise
+        except Exception as e:
+            print(f"Validation error: {str(e)}")
+            raise serializers.ValidationError(str(e))
+
+    def create(self, validated_data):
+        try:
+            return Section.objects.create(**validated_data)
+        except Exception as e:
+            print(f"Error creating section: {str(e)}")  # Debug log
+            raise serializers.ValidationError(str(e))
+
     def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['course'] = instance.course.course_abv
-        return data
+        return {
+            'id': instance.id,
+            'course': instance.course.course_abv,
+            'course_name': instance.course.course_name,
+            'year_level': instance.year_level,
+            'section_name': instance.section_name
+        }
