@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
+{% block title %}Student Info - {{ student.first_name }} {{ student.last_name }}{% endblock %}
 
+{% load custom_filters %}
 {% block content %}
 <div class="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <!-- Back Button -->

@@ -1,7 +1,8 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
-from django.db import models, transaction  # Add transaction here
+from django.db import models, transaction
+import json  # Add json import here
 
 from .models import Subject, Activity, Grade, Student, Course, Section
 
@@ -131,7 +132,10 @@ def subject_info(request, subject_code):
 
 def student_info(request, student_id):
     student = get_object_or_404(Student, student_id=student_id)
-    enrollments = StudentSubjectEnrollment.objects.filter(student=student).select_related('subject')
+    enrollments = StudentSubjectEnrollment.objects.filter(
+        student=student,
+        subject__is_active=True  # Only show active (non-archived) subjects
+    ).select_related('subject')
     
     context = {
         'student': student,
@@ -203,20 +207,41 @@ class SubjectViewSet(viewsets.ModelViewSet):
                     data[field] = int(data[field])
             
             with transaction.atomic():
-                # Update directly on the instance
-                serializer = self.get_serializer(instance, data=data, partial=True)
-                if serializer.is_valid():
-                    updated_instance = serializer.save()
-                    return JsonResponse({
-                        'status': 'success',
-                        'message': 'Subject updated successfully',
-                        'data': self.get_serializer(updated_instance).data
-                    })
+                # If subject code is changing and there are related records
+                if 'subject_code' in data and data['subject_code'] != instance.subject_code:
+                    new_code = data['subject_code'].upper()
+                    
+                    # Create new subject with new code and all updated data
+                    new_subject = Subject.objects.create(
+                        subject_code=new_code,
+                        subject_title=data.get('subject_title', instance.subject_title),
+                        course=instance.course if not data.get('course') else Course.objects.get(course_abv=data['course']),
+                        school_year=data.get('school_year', instance.school_year),
+                        semester=data.get('semester', instance.semester),
+                        year_level=data.get('year_level', instance.year_level),
+                        section=data.get('section', instance.section),
+                        archive=instance.archive,
+                        is_active=instance.is_active
+                    )
+                    
+                    # Update foreign key references from related models
+                    Activity.objects.filter(subject=instance).update(subject=new_subject)
+                    StudentSubjectEnrollment.objects.filter(subject=instance).update(subject=new_subject)
+                    
+                    # Delete old subject after moving all relations
+                    instance.delete()
+                    updated_instance = new_subject
+                else:
+                    # Regular update without changing subject code
+                    serializer = self.get_serializer(instance, data=data, partial=True)
+                    if serializer.is_valid():
+                        updated_instance = serializer.save()
                 
                 return JsonResponse({
-                    'status': 'error',
-                    'message': serializer.errors
-                }, status=400)
+                    'status': 'success',
+                    'message': 'Subject updated successfully',
+                    'data': self.get_serializer(updated_instance).data
+                })
                 
         except Exception as e:
             print(f"Error updating subject: {str(e)}")
@@ -749,17 +774,27 @@ class GradeViewSet(viewsets.ModelViewSet):
             grades_data = request.data.get('grades', [])
             activity = get_object_or_404(Activity, activity_id=activity_id)
             
-            for grade_item in grades_data:
-                student_id = grade_item['student_id']
-                grade_value = grade_item['grade']
-                
-                Grade.objects.update_or_create(
-                    student_id=student_id,
-                    activity_id=activity_id,
-                    defaults={'student_grade': grade_value}
-                )
+            with transaction.atomic():
+                for grade_item in grades_data:
+                    student_id = grade_item['student_id']
+                    grade_value = grade_item['grade']
+                    
+                    if grade_value == 'N/A':
+                        # Delete the grade if it exists
+                        Grade.objects.filter(
+                            student_id=student_id,
+                            activity=activity
+                        ).delete()
+                    else:
+                        # Update or create the grade
+                        Grade.objects.update_or_create(
+                            student_id=student_id,
+                            activity=activity,
+                            defaults={'student_grade': grade_value}
+                        )
 
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
+            
         except Activity.DoesNotExist:
             return Response({
                 'status': 'error',
@@ -928,7 +963,7 @@ def get_enrolled_students(request):
     if not subject_code:
         return JsonResponse({'status': 'error', 'message': 'Subject code is required'})
     
-    enrollments = Enrollment.objects.filter(
+    enrollments = StudentSubjectEnrollment.objects.filter(
         subject__subject_code=subject_code
     ).select_related('student', 'student__course')
     
