@@ -377,18 +377,22 @@
 <script>
 function switchTab(tab) {
     // Update tab buttons
-    document.querySelectorAll('.tab-active').forEach(el => el.classList.remove('tab-active', 'border-[#006837]', 'text-[#006837]', 'bg-[#006837]', 'text-white'));
+    document.querySelectorAll('.tab-active').forEach(el => el.classList.remove('tab-active', 'border-[#006837]', 'text-[#006837]'));
     document.getElementById(`${tab}Tab`).classList.add('tab-active', 'border-[#006837]', 'text-[#006837]');
     
     // Update content visibility
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.getElementById(`${tab}Content`).classList.remove('hidden');
+    
+    // Save active tab
+    localStorage.setItem('activeTab', tab);
 }
 
 // Set initial active tab on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Activate courses tab by default
-    switchTab('courses');
+    // Check for saved tab
+    const activeTab = localStorage.getItem('activeTab') || 'courses';
+    switchTab(activeTab);
 });
 
 function openModal(modalId) {
@@ -412,7 +416,10 @@ document.getElementById('sectionForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            location.reload();
+            showToast('Section created successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addSectionModal')).hide();
+            localStorage.setItem('activeTab', 'sections');
+            setTimeout(() => location.reload(), 1000);
         } else {
             showToast(data.message || 'Failed to create section', 'error');
         }
@@ -424,31 +431,22 @@ document.getElementById('sectionForm').addEventListener('submit', function(e) {
 });
 
 function editSection(sectionId) {
-    console.log("Loading section:", sectionId);  // Debug log
-    
     fetch(`/api/sections/${sectionId}/`, {
         headers: {
             'Accept': 'application/json',
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
     })
-    .then(response => {
-        console.log("Response status:", response.status);  // Debug log
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log("Received data:", data);  // Debug log
-        
+        console.log('Retrieved section data:', data);  // Debug log
         if (data.status === 'success') {
-            // Fill the form with section data
             document.getElementById('edit_section_id').value = sectionId;
             document.getElementById('edit_course').value = data.data.course;
             document.getElementById('edit_year_level').value = data.data.year_level;
             document.getElementById('edit_section_name').value = data.data.section_name;
             
-            // Show the modal
-            const modal = new bootstrap.Modal(document.getElementById('editSectionModal'));
-            modal.show();
+            new bootstrap.Modal(document.getElementById('editSectionModal')).show();
         } else {
             throw new Error(data.message || 'Failed to load section data');
         }
@@ -464,31 +462,49 @@ document.getElementById('editSectionForm').addEventListener('submit', function(e
     const formData = new FormData(this);
     const sectionId = formData.get('section_id');
 
+    const data = {
+        course: formData.get('course'),
+        year_level: formData.get('year_level'),
+        section_name: formData.get('section_name')
+    };
+
+    // Validate required fields
+    if (!data.course || !data.year_level || !data.section_name) {
+        showToast('All fields are required', 'error');
+        return;
+    }
+
+    console.log('Updating section:', sectionId, 'with data:', data);  // Debug log
+
     fetch(`/api/sections/${sectionId}/`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': formData.get('csrfmiddlewaretoken')
         },
-        body: JSON.stringify({
-            course: formData.get('course'),
-            year_level: parseInt(formData.get('year_level')),
-            section_name: formData.get('section_name')
-        })
+        body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);  // Debug log
+        return response.json();
+    })
     .then(data => {
+        console.log('Response data:', data);  // Debug log
         if (data.status === 'success') {
             showToast('Section updated successfully', 'success');
             bootstrap.Modal.getInstance(document.getElementById('editSectionModal')).hide();
-            setTimeout(() => window.location.reload(), 1000);
+            localStorage.setItem('activeTab', 'sections');
+            setTimeout(() => location.reload(), 1000);
         } else {
-            showToast(data.message || 'Failed to update section', 'error');
+            const errorMessage = typeof data.message === 'object' 
+                ? Object.values(data.message).join('. ') 
+                : data.message;
+            throw new Error(errorMessage || 'Failed to update section');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('Failed to update section', 'error');
+        showToast('Failed to update section: ' + error.message, 'error');
     });
 });
 
@@ -503,7 +519,7 @@ function deleteSection(sectionId) {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                location.href = window.location.pathname + '#sections';
+                localStorage.setItem('activeTab', 'sections');
                 location.reload();
             } else {
                 showToast(data.message || 'Failed to delete section', 'error');
@@ -521,25 +537,42 @@ document.getElementById('courseForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
     
+    // Validate input
+    const courseAbv = formData.get('course_abv').trim();
+    const courseName = formData.get('course_name').trim();
+    
+    if (!courseAbv || !courseName) {
+        showToast('All fields are required', 'error');
+        return;
+    }
+
+    const data = {
+        course_abv: courseAbv,
+        course_name: courseName
+    };
+
+    console.log('Creating course with data:', data);  // Debug log
+    
     fetch('/api/courses/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': formData.get('csrfmiddlewaretoken')
         },
-        body: JSON.stringify({
-            course_abv: formData.get('course_abv'),
-            course_name: formData.get('course_name')
-        })
+        body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(data => {
+        console.log('Response:', data);  // Debug log
         if (data.status === 'success') {
             showToast('Course created successfully', 'success');
             bootstrap.Modal.getInstance(document.getElementById('addCourseModal')).hide();
             setTimeout(() => location.reload(), 1000);
         } else {
-            throw new Error(data.message || 'Failed to create course');
+            const errorMessage = typeof data.message === 'object' 
+                ? Object.values(data.message).join('. ') 
+                : data.message;
+            throw new Error(errorMessage || 'Failed to create course');
         }
     })
     .catch(error => {
