@@ -14,14 +14,11 @@
     
     <!-- Subject Header Card -->
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
-        <div class="relative p-6">
+        <div class="relative p-6 bg-gradient-to-br from-green-300 to-green-50 ">
             <div class="grid grid-cols-3 gap-6">
                 <!-- Subject Info -->
-                <div class="col-span-2 relative z-10">
-                    <div class="flex items-start gap-4">
-                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#006837] to-[#2d8653] flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                            {{ subject.subject_code|slice:":2" }}
-                        </div>
+                <div class="col-span-2 relative z-10 border-r border-gray-500">
+                    <div class="flex items-start gap-4 pl-2">
                         <div>
                             <h1 class="text-3xl font-bold text-gray-800">{{ subject.subject_code }}</h1>
                             <p class="text-gray-600 mt-1 text-lg">{{ subject.subject_title }}</p>
@@ -29,7 +26,7 @@
                     </div>
                     
                     <!-- Subject Details Grid -->
-                    <div class="grid grid-cols-3 gap-4 mt-4">
+                    <div class="grid grid-cols-3 gap-4 mt-4 text0">
                         <div class="p-2">
                             <p class="text-sm text-gray-500 mb-1">Course</p>
                             <p class="font-semibold text-gray-800">{{ subject.course.course_abv }}</p>
@@ -46,17 +43,17 @@
                 </div>
 
                 <!-- Stats Card -->
-                <div class="bg-gradient-to-br from-green-300 to-green-50 rounded-2xl p-6 relative overflow-hidden">
+                <div class="p-6 relative overflow-hidden text-right">
                     <div class="relative z-10">
                         <p class="text-sm font-medium text-gray-600 mb-1">Activities to Grade</p>
-                        <h3 class="text-4xl font-bold text-gray-800">
+                        <h3 class="text-6xl font-bold text-gray-800">
                             {{ pending_activities|default:"0" }}
                         </h3>
-                        <p class="text-sm text-gray-500 mt-2">Pending activities</p>
+                        <p class="text-sm text-gray-500 mt-2">Pending</p>
                     </div>
-                    <div class="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#006837]/5 to-transparent rounded-tl-full"></div>
                 </div>
             </div>
+            <div class="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#006837]/5 to-transparent rounded-tl-full"></div>
         </div>
     </div>
 
