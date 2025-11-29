@@ -23,11 +23,6 @@ A full-stack student management system with both backend and frontend components
   4. Add/edit grades
 - Implements basic UI/UX practices for navigation and data input
 
-## System Requirements
-- RESTfulAPI Integration
-- Proper error handling and validation
-- Version control (Git)
-- Hosted on Render
 
 ## Getting Started
 
